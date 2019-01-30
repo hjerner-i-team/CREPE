@@ -1,5 +1,6 @@
-# CREPE - Core Reservoir Experiment Python Example
-## Interaction experiment with real grown neurons as part of the NTNU Cyborg project
+# CRÊPE 
+## Core Reservoir Experiment Python Example
+Interaction experiment with real grown neurons as part of the NTNU Cyborg project
  
 _This is the work of group 2 - Hjerner i Team - in the EiT village NTNU Cyborg (Course TTK4850)_
 
