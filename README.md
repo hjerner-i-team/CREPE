@@ -19,7 +19,7 @@ Make sure you are using python 3 (You can check by using `python -V`). If you ha
 
 `python -m venv env`
 
-`source venv/bin/activate`
+`source env/bin/activate`
 
 You need to use the `source` command on every terminal session.
 
