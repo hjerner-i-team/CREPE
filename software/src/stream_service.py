@@ -8,9 +8,6 @@ import rpyc
 from enum import Enum
 import numpy as np
 
-# The path to the test_data folder
-path_to_test_data = "../../test_data/"
-
 # WARNING The following enum is not currently usefull. 
 # Enum to represent which mode the DataProxy should be in
 class DataModus(Enum):
@@ -53,19 +50,7 @@ class StreamService(rpyc.Service):
         
         # set it as the current stream
         self.stream = rand_data 
-
-    # Generates a 2d numpy array from a .h5 file to self.stream
-    # @dev TODO implement dynamic filesnames or something
-    def generate_H5_stream(self): 
-        _filename = "4.h5"
-        # open the file with h5py
-        f = h5py.File(path_to_test_data + _filename, 'r') 
-        # navigate to where the raw data is in the .h5 file
-        # Use the program hdfviewer or check our upcomming documentation for full .h5 format
-        stream = f['Data']['Recording_0']['AnalogStream']['Stream_0']['ChannelData']
-        # this will return a h5py object so we convert it to a list
-        self.stream = list(stream)
-    
+ 
     # Function to check attribute values and calculate the rigth end index
     # @param _row One of channels in self.stream
     # @param _amount The range we wish to read
