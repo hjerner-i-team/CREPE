@@ -1,32 +1,40 @@
-# This class is to enable other classes (preprocessing) to pull experiment data
-# It can either get data directly from the live tcp connection class, or gather data from a
-# experiment file .h5
+"""
+ This file is meant to be inherited such that a class can expose a stream trough RPC
+ to other components in this project
+"""
+
 import h5py
 import rpyc
 from enum import Enum
 import numpy as np
 
 # The path to the test_data folder
-path_to_test_data = "../../../test_data/"
+path_to_test_data = "../../test_data/"
 
 # WARNING The following enum is not currently usefull. 
 # Enum to represent which mode the DataProxy should be in
 class DataModus(Enum):
-    LIVE = 1
-    H5DATA = 2
+    DATA = 1
+    RESULT = 2
+    TESTING = 3
 
-# TODO: Add a way to set filename dynamicly
-# A class that gathers data and implements funtion that makes data gathering easy
-# @dev Inherits from RPyC so it can be exposed to other processos trough RPC
-# @dev Currently it generates a random "stream" with the dimensions 59,1000
-class DataProxyService(rpyc.Service):
-    def __init__(self):
-        self.modus = DataModus.H5DATA
-        self.stream = None
-        #self.generate_H5_stream()
-        self.generate_random_test_stream()
-        self.channelIterator = [0 for x in range(len(self.stream))] 
-    
+# A class that stores a stream of data, implements data gathering functions and exposes it to RPC
+# @dev Should be inherited by processes who wish to share data. 
+# @dev Currently it generates a random "stream" with the dimensions 59,1000 for testing purposes
+# @dev Data is exposed trough a "pull" scheme. Call the exposed functions to get data
+class StreamService(rpyc.Service): 
+    def __init__(self, _dataModus=DataModus.TESTING):
+        # Check if the enum atribute is an enum of type DataModus
+        if not isinstance(_dataModus, DataModus):
+            raise ValueError("Did not recive an DataModus enum")
+        self.modus = _dataModus
+        
+        self.stream = None 
+        
+        # If the modus is set to testing then generate test data
+        if _dataModus == DataModus.TESTING:
+            self.generate_random_test_stream()
+
     # Raises error if self.stream is empty / not initialized
     def _raiseErrorOnNullStream(self):
         if self.stream is None:
@@ -44,8 +52,7 @@ class DataProxyService(rpyc.Service):
         rand_data = rand_data * 200
         
         # set it as the current stream
-        self.stream = rand_data
-        
+        self.stream = rand_data 
 
     # Generates a 2d numpy array from a .h5 file to self.stream
     # @dev TODO implement dynamic filesnames or something
@@ -60,43 +67,43 @@ class DataProxyService(rpyc.Service):
         self.stream = list(stream)
     
     # Function to check attribute values and calculate the rigth end index
-    # @param _channel One of channels in self.stream
+    # @param _row One of channels in self.stream
     # @param _amount The range we wish to read
     # @param _startIndex The starting index to begin reading from on the channel
     # @returns endIndex Either False or _startIndex < endIndex < length of channel 
-    def _safe_channel_data_range(self, _channel, _amount, _startIndex):
+    def _safe_row_data_range(self, _row, _amount, _startIndex):
         # check if you called a channel that exists
-        if(_channel >= len(self.stream)): 
-            raise AttributeError("_channel was out of range with regards to the stream")
+        if(_row >= len(self.stream)): 
+            raise AttributeError("_row was out of range with regards to the stream")
         
         # check if we can read from stream and if so, how much
-        if _startIndex >= len(self.stream[_channel]):
+        if _startIndex >= len(self.stream[_row]):
             # There is no more data to return
             return False
-        elif _startIndex + _amount >= len(self.stream[_channel]):
+        elif _startIndex + _amount >= len(self.stream[_row]):
             # There is more data, but not the full amount. 
             # Return the index at the end of the stream
-            return len(self.stream[_channel])
+            return len(self.stream[_row])
         else:
             # Normal case, return the end index with maximum range
             return _startIndex + _amount
     
     # Get a subset of a channels data
     # @notice Exposed to RPC
-    # @param _channel One of channels in self.stream
+    # @param _row One of channels in self.stream
     # @param _amount The range we wish to read
     # @param _startIndex The starting index to begin reading from on the channel
-    def exposed_get_channel_data(self, _channel, _amount, _startIndex):
+    def exposed_get_row_data(self, _row, _amount, _startIndex):
         self._raiseErrorOnNullStream()
-        endIndex = self._safe_channel_data_range(_channel, _amount, _startIndex)
+        endIndex = self._safe_row_data_range(_row, _amount, _startIndex)
         if not endIndex:
             return False
-        data = self.stream[_channel][_startIndex:endIndex]
+        data = self.stream[_row][_startIndex:endIndex]
         return data
 
     # Get the dimensions of self.stream
     # @notice Exposed to RPC
-    def exposed_get_stream_dim(self):
+    def exposed_get_stream_dimensions(self):
         self._raiseErrorOnNullStream()
         return len(self.stream), len(self.stream[0])
     
@@ -122,11 +129,10 @@ class DataProxyService(rpyc.Service):
         """
         
         # Generate a new array, where each row is a subset of the corresponding channel
-        seg = [self.exposed_get_channel_data(x, _amount, _startIndex)
+        seg = [self.exposed_get_row_data(x, _amount, _startIndex)
                 for x in range(len(self.stream))]
 
         return seg
-
 
 
 """
@@ -139,17 +145,17 @@ DEBUG CODE:
 # A small test to check and debug DataProxyService 
 # @dev Raises RuntimeError if test does not pass
 def dataProxyTester(dp):
-    # check _safe_channel_data_range
+    # check _safe_row_data_range
     # Normal case:
-    endIndex = dp._safe_channel_data_range(0,100,0)
+    endIndex = dp._safe_row_data_range(0,100,0)
     if endIndex != 100:
         raise RuntimeError()
     # not the full amount of data
-    endIndex = dp._safe_channel_data_range(0,100,930)
+    endIndex = dp._safe_row_data_range(0,100,930)
     if endIndex != 1000:
         raise RuntimeError()
     # no data left
-    endIndex = dp._safe_channel_data_range(0,100,1000)
+    endIndex = dp._safe_row_data_range(0,100,1000)
     if endIndex != False:
         raise RuntimeError()
 
