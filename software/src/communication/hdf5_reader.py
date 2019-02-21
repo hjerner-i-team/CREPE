@@ -1,7 +1,8 @@
 import sys
+# We need to change the system path to correctly import files in directories above
 sys.path.append('../')
 from stream_service import StreamService, DataModus
-sys.path.append('communication/')
+sys.path.append('communication/') # revert back to original folder
 import h5py
 import numpy as np
 

@@ -1,5 +1,8 @@
 h5py==2.9.0
 numpy==1.16.1
+flask
+gunicorn
+requests
 plumbum==1.6.7
 rpyc==4.0.2
 six==1.12.0
