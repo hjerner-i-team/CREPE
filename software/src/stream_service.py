@@ -49,7 +49,30 @@ class StreamService(rpyc.Service):
         
         # set it as the current stream
         self.stream = rand_data 
- 
+
+    # Appends new data to row
+    # @param _row is one of the channels in self.stream
+    # @param _new_data is either an array containing new data or a single value
+    def append_stream_row_data(self, _row, _new_data):
+        # check if variable is single value or array
+        if isinstance(_new_data, list): 
+            self.stream[_row] += _new_data
+        else:
+            self.stream[_row].append(_new_data)
+
+    # Appends segment to stream
+    # @param _new_data is either a 1D array with new values for each channel, or a 2d array
+    #   with a list of new values for each channel. To not append to a channel send None or an
+    #   empty list for that particular channel.
+    def append_stream_segment_data(self, _new_data):
+        # check that _new_data matches the stream
+        if not (len(self.stream) == len(_new_data)):
+            raise ValueError("New data was not of correct dimensions")
+        # Add the new data to stream
+        for i in range(len(_new_data)):
+            if not (_new_data[i] == None or not _new_data[i]):
+                self.append_stream_row_data(i, _new_data[i])
+
     # Function to check attribute values and calculate the rigth end index
     # @param _row One of channels in self.stream
     # @param _range The range we wish to read
@@ -178,7 +201,6 @@ class StreamSegmentIterator():
         self.index += len(stream_segment[0])
 
         return stream_segment
-
 
 """
 
