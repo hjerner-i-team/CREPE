@@ -1,13 +1,17 @@
-import sys
-# We need to change the system path to correctly import files in directories above
-sys.path.append('../')
+""" Import fix - check README for documentation """ 
+import os,sys,inspect 
+__currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+sys.path.insert(0, __currentdir[0:__currentdir.find("software/src")+len("software/src")])
+""" End import fix """
+
 from stream_service import StreamService, DataModus
-sys.path.append('communication/') # revert back to original folder
+
 import h5py
 import numpy as np
 
-# The path to the test_data folder
-path_to_test_data = "../../../test_data/"
+# The path to the test_data folder. sys.path[0] is the src folder
+path_to_test_data = sys.path[0][0:-1 * len("/software/src")] + "/test_data/"
+print(path_to_test_data)
 
 class HDF5Reader(StreamService):
 
