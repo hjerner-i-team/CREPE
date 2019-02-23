@@ -116,7 +116,7 @@ class StreamService(rpyc.Service):
         # Generate a new array, where each row is a subset of the corresponding channel
         seg = [self.exposed_get_row_segment(x, _range, _startIndex)
                 for x in range(len(self.stream))]
-
+        
         # make sure that the segment is complete by checking that none is false
         if not all(x != False for x in seg):
             return False
@@ -130,6 +130,55 @@ class StreamService(rpyc.Service):
 
         return seg
 
+# Iterates over a row in the stream.
+class StreamRowIterator():
+    
+    # @param _channel is the row id. 
+    # @param _range is the number of elements to return on each iteration
+    def __init__(self, _channel=0, _range = 100):
+        self.index = 0
+        self.channel = _channel
+        self.range = _range
+
+    # gets the next set of data from the stream
+    # @param _conn is the rpc connection object
+    def next(self, _conn): 
+        # Get data from rpc
+        row_segment = _conn.root.get_row_segment(self.channel, self.range, self.index)
+        
+        # Check that we got data
+        if not row_segment:
+            return False
+
+        # Increase the iteration index
+        self.index += len(row_segment)
+
+        return row_segment
+
+# Iterates over segments in the stream
+class StreamSegmentIterator(): 
+
+    # @param _range is the number of elements to return on each iteration
+    def __init__(self, _range = 100):
+        self.index = 0
+        self.range = _range
+
+    # gets the next set of data from the stream
+    # @param _conn is the rpc connection object
+    # @returns 2D stream segment with row length 1 < x < self.range or False
+    def next(self, _conn): 
+        # Get data from rpc
+        stream_segment = _conn.root.get_stream_segment(self.channel, self.range, self.index)
+        
+        # Check that we got data
+        if not stream_segment:
+            return False
+
+        # Increase the iteration index
+        self.index += len(stream_segment[0])
+
+        return stream_segment
+
 
 """
 
@@ -141,20 +190,20 @@ DEBUG CODE:
 # A small test to check and debug DataProxyService 
 # @dev Raises RuntimeError if test does not pass
 def dataProxyTester(dp):
-    # check _safe_row_data_range
+    # check _safe_row_segment_range
     # Normal case:
-    endIndex = dp._safe_row_data_range(0,100,0)
+    endIndex = dp._safe_row_segment_range(0,100,0)
     if endIndex != 100:
         raise RuntimeError()
-    # not the full amount of data
-    endIndex = dp._safe_row_data_range(0,100,930)
+    # not the full range of data
+    endIndex = dp._safe_row_segment_range(0,100,930)
     if endIndex != 1000:
         raise RuntimeError()
     # no data left
-    endIndex = dp._safe_row_data_range(0,100,1000)
+    endIndex = dp._safe_row_segment_range(0,100,1000)
     if endIndex != False:
         raise RuntimeError()
 
 if __name__ == "__main__":
-    d = DataProxyService()
+    d = StreamService()
     dataProxyTester(d)
