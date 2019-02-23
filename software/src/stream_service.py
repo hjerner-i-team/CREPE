@@ -3,7 +3,6 @@
  to other components in this project
 """
 
-import h5py
 import rpyc
 from enum import Enum
 import numpy as np
@@ -53,10 +52,10 @@ class StreamService(rpyc.Service):
  
     # Function to check attribute values and calculate the rigth end index
     # @param _row One of channels in self.stream
-    # @param _amount The range we wish to read
+    # @param _range The range we wish to read
     # @param _startIndex The starting index to begin reading from on the channel
     # @returns endIndex Either False or _startIndex < endIndex < length of channel 
-    def _safe_row_data_range(self, _row, _amount, _startIndex):
+    def _safe_row_segment_range(self, _row, _range, _startIndex):
         # check if you called a channel that exists
         if(_row >= len(self.stream)): 
             raise AttributeError("_row was out of range with regards to the stream")
@@ -65,22 +64,22 @@ class StreamService(rpyc.Service):
         if _startIndex >= len(self.stream[_row]):
             # There is no more data to return
             return False
-        elif _startIndex + _amount >= len(self.stream[_row]):
-            # There is more data, but not the full amount. 
+        elif _startIndex + _range >= len(self.stream[_row]):
+            # There is more data, but not the full range. 
             # Return the index at the end of the stream
             return len(self.stream[_row])
         else:
             # Normal case, return the end index with maximum range
-            return _startIndex + _amount
+            return _startIndex + _range
     
     # Get a subset of a channels data
     # @notice Exposed to RPC
     # @param _row One of channels in self.stream
-    # @param _amount The range we wish to read
+    # @param _range The range we wish to read
     # @param _startIndex The starting index to begin reading from on the channel
-    def exposed_get_row_data(self, _row, _amount, _startIndex):
+    def exposed_get_row_segment(self, _row, _range, _startIndex):
         self._raiseErrorOnNullStream()
-        endIndex = self._safe_row_data_range(_row, _amount, _startIndex)
+        endIndex = self._safe_row_segment_range(_row, _range, _startIndex)
         if not endIndex:
             return False
         data = self.stream[_row][_startIndex:endIndex]
@@ -94,9 +93,10 @@ class StreamService(rpyc.Service):
     
     # Get a segment of the stream (all channels)
     # @notice Exposed to RPC 
-    # @param _amount The range we wish to read
+    # @param _range The range we wish to read
     # @param _startIndex The starting index to begin reading from
-    def exposed_get_stream_segment(self, _amount, _startIndex):
+    # @returns a segmented 2d array where each row has equal dimensions or False
+    def exposed_get_stream_segment(self, _range, _startIndex):
         self._raiseErrorOnNullStream()
 
         """ Example: 
@@ -105,7 +105,7 @@ class StreamService(rpyc.Service):
             [ 66, 77, 88, 99],
             [ 44, 33, 22, 11]
         ]
-        Segmented with for examle _amount=2, and _startIndex=1
+        Segmented with for examle _range=2, and _startIndex=1
         [
             [ 77, 88],
             [ 33, 22]
@@ -114,8 +114,19 @@ class StreamService(rpyc.Service):
         """
         
         # Generate a new array, where each row is a subset of the corresponding channel
-        seg = [self.exposed_get_row_data(x, _amount, _startIndex)
+        seg = [self.exposed_get_row_segment(x, _range, _startIndex)
                 for x in range(len(self.stream))]
+
+        # make sure that the segment is complete by checking that none is false
+        if not all(x != False for x in seg):
+            return False
+
+        # check if dimensions are correct/clean
+        lens = [len(row) for row in seg]
+        if not all(l == lens[0] for l in lens):
+            # now we must find the shortest dimension and cut the entire segment to that length
+            smallest = min(lens)
+            seg = [row[0:smallest] for row in seg]
 
         return seg
 
