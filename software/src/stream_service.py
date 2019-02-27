@@ -6,6 +6,7 @@
 import rpyc
 from enum import Enum
 import numpy as np
+from settings import STREAM_DIMENSION
 
 # WARNING The following enum is not currently usefull. 
 # Enum to represent which mode the DataProxy should be in
@@ -48,7 +49,7 @@ class StreamService(rpyc.Service):
         # If DataModus.DATA it will be 2d
         # Else if DataModus.RESULT it will be 1d
         # TODO add settings for dimensions
-        self.stream = [[] for x in range(0,60)]
+        self.stream = [[] for x in range(0, STREAM_DIMENSION)]
 
         # Callback functions array
         self._row_segment_callbacks = []
@@ -98,9 +99,11 @@ class StreamService(rpyc.Service):
 
     # An extension of append_stream_row_data
     def _append_stream_row_data_without_updating_callbacks(self, _row, _new_data):
-        # check if variable is single value or array
+        # check if variable is single value, array or a numpy object
         if isinstance(_new_data, list): 
             self.stream[_row] += _new_data
+        elif isinstance(_new_data, np.ndarray):
+            self.stream[_row] = np.append(self.stream[_row], _new_data)
         else:
             self.stream[_row].append(_new_data)
 
@@ -168,6 +171,7 @@ class StreamService(rpyc.Service):
     # @returns a segmented 2d array where each row has equal dimensions or False
     def get_stream_segment(self, _range, _startIndex):
         self._raiseErrorOnNullStream()
+        print("in get_stream_segment: _range: ", _range, " _startIndex: ", _startIndex)
 
         """ Example: 
         Original stream: 
@@ -197,7 +201,7 @@ class StreamService(rpyc.Service):
             # now we must find the shortest dimension and cut the entire segment to that length
             smallest = min(lens)
             seg = [row[0:smallest] for row in seg]
-
+        print(len(self.stream), len(self.stream[0]))
         return seg
 
     # Get the dimensions of self.stream
