@@ -14,19 +14,46 @@ class DataModus(Enum):
     RESULT = 2
     TESTING = 3
 
+class Callback():
+    def __init__(self, _streamService, _callback, _range, _startIndex, _row=None):
+        self.streamService = _streamService
+        self.callback = _callback
+        self.range = _range
+        self.startIndex = _startIndex
+        self.row = _row
+
+    def __call__(self):
+        # if row is None then call stream_segment if not then call row_segment
+        if self.row == None:
+            data = self.streamService.get_stream_segment(self.range, self.startIndex)
+            self.callback(data)
+        else:
+            data = self.streamService.get_row_segment(self.row, self.range, self.startIndex)
+            self.callback(data)
+
+
 # A class that stores a stream of data, implements data gathering functions and exposes it to RPC
 # @dev Should be inherited by processes who wish to share data. 
 # @dev Currently it generates a random "stream" with the dimensions 59,1000 for testing purposes
 # @dev Data is exposed trough a "pull" scheme. Call the exposed functions to get data
 class StreamService(rpyc.Service): 
+
     def __init__(self, _dataModus=DataModus.TESTING):
         # Check if the enum atribute is an enum of type DataModus
         if not isinstance(_dataModus, DataModus):
             raise ValueError("Did not recive an DataModus enum")
         self.modus = _dataModus
         
-        self.stream = None 
-        
+        # The stream array that will contain the data
+        # If DataModus.DATA it will be 2d
+        # Else if DataModus.RESULT it will be 1d
+        # TODO add settings for dimensions
+        self.stream = [[] for x in range(0,60)]
+
+        # Callback functions array
+        self._row_segment_callbacks = []
+        self._streams_segment_callbacks = []
+
         # If the modus is set to testing then generate test data
         if _dataModus == DataModus.TESTING:
             self.generate_random_test_stream()
@@ -39,7 +66,7 @@ class StreamService(rpyc.Service):
     # Generates a 2d matrice with random numbers to self.stream for testing purposes
     def generate_random_test_stream(self):
         # check that stream is empty
-        if self.stream != None: 
+        if all([ len(x) != 0 for x in self.stream ]):
             raise RuntimeError("Stream was not empty")
 
         # generate a 2d numpy matrice of random values between 0 & 1
@@ -48,17 +75,41 @@ class StreamService(rpyc.Service):
         rand_data = rand_data * 200
         
         # set it as the current stream
-        self.stream = rand_data 
+        self.append_stream_segment_data(rand_data) 
 
-    # Appends new data to row
-    # @param _row is one of the channels in self.stream
-    # @param _new_data is either an array containing new data or a single value
-    def append_stream_row_data(self, _row, _new_data):
+    def _call_all(self, _arrayOfFunctions):
+        for i in range(len(_arrayOfFunctions)):
+            _arrayOfFunctions[i]()
+
+    def _update_callbacks(self, _row=None):
+        # If row is None then this is a segment updating callback
+        if _row == None:
+            # Call all wainting callbacks
+            self._call_all(self._streams_segment_callbacks)
+            # Reset the callback array
+            self._streams_segment_callbacks = []
+        else:
+            # find the callbacks who corespond to _row
+            rowcallbacks = [ x for x in self._row_segment_callbacks if x.row == _row ] 
+            # call all
+            self._call_all(rowcallbacks) 
+            # Delete all rowcallbacks elements from self._row_segment_callbacks
+            self._row_segment_callbacks =list(set(self._row_segment_callbacks) - set(rowcallbacks))
+
+    # An extension of append_stream_row_data
+    def _append_stream_row_data_without_updating_callbacks(self, _row, _new_data):
         # check if variable is single value or array
         if isinstance(_new_data, list): 
             self.stream[_row] += _new_data
         else:
             self.stream[_row].append(_new_data)
+
+    # Appends new data to row
+    # @param _row is one of the channels in self.stream
+    # @param _new_data is either an array containing new data or a single value
+    def append_stream_row_data(self, _row, _new_data):
+        self._append_stream_row_data_without_updating_callbacks(_row, _new_data) 
+        self._update_callbacks(_row)
 
     # Appends segment to stream
     # @param _new_data is either a 1D array with new values for each channel, or a 2d array
@@ -70,8 +121,9 @@ class StreamService(rpyc.Service):
             raise ValueError("New data was not of correct dimensions")
         # Add the new data to stream
         for i in range(len(_new_data)):
-            if not (_new_data[i] == None or not _new_data[i]):
-                self.append_stream_row_data(i, _new_data[i])
+            if len(_new_data[i]) > 0:
+                self._append_stream_row_data_without_updating_callbacks(i, _new_data[i])
+        self._update_callbacks()
 
     # Function to check attribute values and calculate the rigth end index
     # @param _row One of channels in self.stream
@@ -96,11 +148,11 @@ class StreamService(rpyc.Service):
             return _startIndex + _range
     
     # Get a subset of a channels data
-    # @notice Exposed to RPC
+    # @notice will be called by exposed function
     # @param _row One of channels in self.stream
     # @param _range The range we wish to read
     # @param _startIndex The starting index to begin reading from on the channel
-    def exposed_get_row_segment(self, _row, _range, _startIndex):
+    def get_row_segment(self, _row, _range, _startIndex):
         self._raiseErrorOnNullStream()
         endIndex = self._safe_row_segment_range(_row, _range, _startIndex)
         if not endIndex:
@@ -108,18 +160,13 @@ class StreamService(rpyc.Service):
         data = self.stream[_row][_startIndex:endIndex]
         return data
 
-    # Get the dimensions of self.stream
-    # @notice Exposed to RPC
-    def exposed_get_stream_dimensions(self):
-        self._raiseErrorOnNullStream()
-        return len(self.stream), len(self.stream[0])
     
     # Get a segment of the stream (all channels)
-    # @notice Exposed to RPC 
+    # @notice will be called by exposed functions
     # @param _range The range we wish to read
     # @param _startIndex The starting index to begin reading from
     # @returns a segmented 2d array where each row has equal dimensions or False
-    def exposed_get_stream_segment(self, _range, _startIndex):
+    def get_stream_segment(self, _range, _startIndex):
         self._raiseErrorOnNullStream()
 
         """ Example: 
@@ -137,7 +184,7 @@ class StreamService(rpyc.Service):
         """
         
         # Generate a new array, where each row is a subset of the corresponding channel
-        seg = [self.exposed_get_row_segment(x, _range, _startIndex)
+        seg = [self.get_row_segment(x, _range, _startIndex)
                 for x in range(len(self.stream))]
         
         # make sure that the segment is complete by checking that none is false
@@ -152,6 +199,59 @@ class StreamService(rpyc.Service):
             seg = [row[0:smallest] for row in seg]
 
         return seg
+
+    # Get the dimensions of self.stream
+    # @notice Exposed to RPC
+    def exposed_get_stream_dimensions(self):
+        self._raiseErrorOnNullStream()
+        return len(self.stream), len(self.stream[0])
+
+    # Get a subset of a channels data
+    # @notice Exposed to RPC
+    # @param _row One of channels in self.stream
+    # @param _range The range we wish to read
+    # @param _startIndex The starting index to begin reading from on the channel
+    # @param _callback is the func to call when data is ready, if it is not ready now.  
+    # @returns a segmented 1d array or False
+    def exposed_get_row_segment(self, _row, _range, _startIndex, _callback=None):
+        data = self.get_row_segment(_row, _range, _startIndex)
+        
+        # check if we got a false value
+        if not data:
+            if _callback == None:
+                return False
+            # Make a callback object
+            cb = Callback(self, _callback, _range, _startIndex, _row)
+            # Append to callbacks array to send data later
+            self._row_segment_callbacks.append(cb)
+            return False
+
+        return data
+
+
+    # Get a segment of the stream (all channels)
+    # @notice Exposed to RPC 
+    # @param _range The range we wish to read
+    # @param _startIndex The starting index to begin reading from
+    # @param _callback is the func to call when data is ready, if it is not ready now.  
+    # @returns a segmented 2d array where each row has equal dimensions or False
+    def exposed_get_stream_segment(self, _range, _startIndex, _callback=None):
+        data = self.get_stream_segment(_range, _startIndex)
+        
+        # check if we got a false value
+        if not data:
+            if _callback == None:
+                return False
+            # Make a callback object
+            cb = Callback(self, _callback, _range, _startIndex)
+            # Append to callbacks array to send data later
+            self._streams_segment_callbacks.append(cb)
+            return False
+
+        return data
+
+    def testgetstream(self,_range, _startIndex, _callback):
+        return self.exposed_get_stream_segment(_range, _startIndex, _callback)
 
 # Iterates over a row in the stream.
 class StreamRowIterator():
@@ -191,7 +291,7 @@ class StreamSegmentIterator():
     # @returns 2D stream segment with row length 1 < x < self.range or False
     def next(self, _conn): 
         # Get data from rpc
-        stream_segment = _conn.root.get_stream_segment(self.channel, self.range, self.index)
+        stream_segment = _conn.root.get_stream_segment(self.range, self.index)
         
         # Check that we got data
         if not stream_segment:
@@ -208,6 +308,8 @@ DEBUG CODE:
 
 """
 
+def callbacktester(self, data):
+    print("in callbacktester: \n", self, "\n", data)
 
 # A small test to check and debug DataProxyService 
 # @dev Raises RuntimeError if test does not pass
@@ -225,6 +327,20 @@ def dataProxyTester(dp):
     endIndex = dp._safe_row_segment_range(0,100,1000)
     if endIndex != False:
         raise RuntimeError()
+
+    # Check callback things
+    streamService = StreamService(DataModus.DATA)
+    
+    res = streamService.testgetstream(2, 0, callbacktester)
+    print(res)
+    if res != False:
+        raise RuntimeError()
+
+
+    print("If not \"in callbacktester:\" was printed then error")
+
+
+
 
 if __name__ == "__main__":
     d = StreamService()
