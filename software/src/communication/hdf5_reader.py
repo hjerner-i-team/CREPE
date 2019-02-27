@@ -6,6 +6,7 @@ sys.path.insert(0, __currentdir[0:__currentdir.find("software/src")+len("softwar
 
 from stream_service import StreamService, DataModus
 
+
 import h5py
 import numpy as np
 
@@ -32,12 +33,8 @@ class HDF5Reader(StreamService):
 
     # Generates a 2d matrice with random numbers to self.stream for testing purposes
     def generate_random_test_stream(self):
-        # check that stream is empty
-        if self.stream != None: 
-            raise RuntimeError("Stream was not empty")
-
         # generate a 2d numpy matrice of random values between 0 & 1
-        rand_data = np.random.rand(59,1000)
+        rand_data = np.random.rand(60,1000)
         # multiply it by 200 to "simulate" real data
         rand_data = rand_data * 200
         
