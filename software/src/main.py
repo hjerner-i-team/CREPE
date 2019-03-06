@@ -6,13 +6,9 @@
 #
 #   Github repo: https://github.com/hjerner-i-team/CREPE
 
-# Function that starts/setups the required components in this project
-def setup(): 
-    pass
-    
-# Function that starts the main loop or the processes that is required to run this loop 
-def start():
-    pass
+from multiprocessing import Process
+from communication.start import main as communication_main
+from neuro_processing.start import main as neuro_main
 
 # Function that runs the required shutdown commands before the project is closed 
 def shutdown():
@@ -21,9 +17,17 @@ def shutdown():
 # Main entry point to entire project
 def main():
     #Welcome to our main function! Hope you have a happy time
-    setup()
 
-    start()
+    comm = Process(target=communication_main)
+    neuro = Process(target=neuro_main)
+    
+    comm.start()
+    neuro.start()
+    
+    neuro.join()
+    comm.join()
+    
+
     
     shutdown()
 
