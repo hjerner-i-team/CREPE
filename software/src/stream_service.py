@@ -204,12 +204,6 @@ class StreamService(rpyc.Service):
         print(len(self.stream), len(self.stream[0]))
         return seg
 
-    # Get the dimensions of self.stream
-    # @notice Exposed to RPC
-    def exposed_get_stream_dimensions(self):
-        self._raiseErrorOnNullStream()
-        return len(self.stream), len(self.stream[0])
-
     # Get a subset of a channels data
     # @notice Exposed to RPC
     # @param _row One of channels in self.stream
