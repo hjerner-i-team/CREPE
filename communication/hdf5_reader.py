@@ -1,17 +1,17 @@
 """ Import fix - check README for documentation """ 
 import os,sys,inspect 
 __currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-sys.path.insert(0, __currentdir[0:__currentdir.find("software/src")+len("software/src")])
+sys.path.insert(0, __currentdir[0:__currentdir.find("/CREPE")+len("/CREPE")])
 """ End import fix """
 
-from stream_service import StreamService, DataModus
+from communication.stream_service import StreamService, DataModus
 
 
 import h5py
 import numpy as np
 
 # The path to the test_data folder. sys.path[0] is the src folder
-path_to_test_data = sys.path[0][0:-1 * len("/software/src")] + "/test_data/"
+path_to_test_data = sys.path[0][0:-1 * len("/CREPE")] + "/test_data/"
 
 class HDF5Reader(StreamService):
 
