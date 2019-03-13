@@ -213,9 +213,8 @@ class StreamService(rpyc.Service):
     # @returns a segmented 1d array or False
     def exposed_get_row_segment(self, _row, _range, _startIndex, _callback=None):
         data = self.get_row_segment(_row, _range, _startIndex)
-        
         # check if we got a false value
-        if not data:
+        if data is False:
             if _callback == None:
                 return False
             # Make a callback object
@@ -237,7 +236,7 @@ class StreamService(rpyc.Service):
         data = self.get_stream_segment(_range, _startIndex)
         
         # check if we got a false value
-        if not data:
+        if data is False:
             if _callback == None:
                 return False
             # Make a callback object
@@ -266,9 +265,9 @@ class StreamRowIterator():
     def next(self, _conn): 
         # Get data from rpc
         row_segment = _conn.root.get_row_segment(self.channel, self.range, self.index)
-        
+
         # Check that we got data
-        if not row_segment:
+        if row_segment is False:
             return False
 
         # Increase the iteration index

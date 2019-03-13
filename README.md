@@ -36,7 +36,7 @@ If using windows then follow the same instructions in this link: https://docs.py
 """ Import fix - check README for documentation """ 
 import os,sys,inspect 
 __currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-sys.path.insert(0, __currentdir[0:__currentdir.find("software/src")+len("software/src")])
+sys.path.insert(0, __currentdir[0:__currentdir.find("CREPE")+len("CREPE")])
 """ End import fix """
 ```
 

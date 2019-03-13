@@ -33,6 +33,7 @@ class HDF5Reader(StreamService):
 
     # Generates a 2d matrice with random numbers to self.stream for testing purposes
     def generate_random_test_stream(self):
+        print("Generating random test stream")
         # generate a 2d numpy matrice of random values between 0 & 1
         rand_data = np.random.rand(60,1000)
         # multiply it by 200 to "simulate" real data
