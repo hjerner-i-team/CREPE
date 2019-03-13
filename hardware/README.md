@@ -1,18 +1,17 @@
 # Rock, Paper, Scissors demonstration
 A demonstration of the CREPE communication framwork utilizing hardware, sensor data and network communications. 
 
-Data is captured and transmitted to CREPE. Results recieved from CREPE are displayed on integrated LCD display. 
 
 
 ### Intention
 This demonstration is a simple example use case of the CREPE framework, demonstrating how CREPE allows for seemless and effortless experimentation with biological neurons. 
 
-The demo setup will capture the IR profile of a rock/paper/scissor and trasmitt this in json format throigh wifi to CREPE. CREPE will communcate the data further to the biological neurons, interpretate the results and transmitt these back to the demo setup, which will display the result on a display. 
+The demo setup will capture the IR profile of a rock/paper/scissor and trasnmitt this in json format through wifi to CREPE. CREPE will communcate the data further to the biological neurons, interpretate the results and transmitt these back to the demo setup, which will display the result on a display. 
 
 
 ### Setup of demo, physical components and configuraton
 
-The components used in the setup:
+**Components:**
 - Arudino Uno       
   - [Datasheet](https://www.terraelectronica.ru/pdf/show?pdf_file=%2Fz%2FDatasheet%2FU%2FUNO_R3(CH340G).pdf&fbclid=IwAR2FrlMjTS1hMZOYdpzgNwjVe-th5LTBIL-3l3MgKYxddCArinXqffufGAc)
 - ESP8266 SMT module (Wifi module)
@@ -22,15 +21,15 @@ The components used in the setup:
 - Adafruit 1.44" Color TFT LCD Display 
   - [Datasheet](https://cdn-learn.adafruit.com/downloads/pdf/adafruit-1-44-color-tft-with-micro-sd-socket.pdf?timestamp=1552457427)
 
-Arduino Uno equipped with IR-sensor, wifi-module and 128x128 1.44" LCD display contained in a physical container, captures IR profile of rock/paper/scissor and transmits to CREPE in json format. Results recieved from CREPE are displayed on  LCD display. Arduino located inside the container, LCD display mounted on the exterior of container. 
+**Overveiw of complete setup:**
+The harware is mounted inside a 3D printed container, powered by a power bank also mounted inside. A small LCD dislay is mounted on he exterior of the container. A IR-sensor is mounted n the interior of the box, capturing data througha slot in the box. A adjustable plate is attached to the bottom of the container. This plate is equipped with a button, registering the hand of the subject. This button is connected to the Arduino.
 
+**Arduino: setup**
+The Arduino Uno is through a PCB shield equipped with the IR-sensor, wifi module and the LCD Display. It captures the IR profile of a rock/paper/scissor and transmits this to CREPE in json format. Results recieved from CREPE are displayed on the display. Capturing of data is triggered by the button mounted on the adjustable plate. 
 
 ### Requisites 
-What things you need to install the software and how to install them
+- The Arduino Uno used is a un-officila arduino. It requires a special driver to connect to Windows. [Driver link]()
 
-```
-Give examples
-```
 
 ### Installation
 
