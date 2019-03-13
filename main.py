@@ -16,26 +16,26 @@ from multiprocessing import Process
 from communication.start import main as communication_main
 from neuro_processing.start import main as neuro_main
 
-def crepe_start( data_file_path = None ):
-    print("Starting CREPE processes")
-    comm = Process(target=communication_main, args=[data_file_path])
-    neuro = Process(target=neuro_main)
-    
-    comm.start()
-    neuro.start()
-    
-    #neuro.join()
-    #comm.join()
+class CREPE():
+    # start all the processe 
+    # @param data_file_path is the file path to an optional .h5 file
+    def __init__(self, data_file_path = None ):
+        print("[CREPE] Starting CREPE processes")
+        self.comm = Process(target=communication_main, args=[data_file_path])
+        self.neuro = Process(target=neuro_main)
+        
+        self.comm.start()
+        self.neuro.start()
+        
+        #self.neuro.join()
+        #self.comm.join()
 
-# Function that runs the required shutdown commands before the project is closed 
-def shutdown():
-    pass
-
-# Main entry point to entire project
-def main():
-    #Welcome to our main function! Hope you have a happy time
-    
-    shutdown()
+    # Function that runs the required shutdown commands before the project is closed 
+    def shutdown(self):
+        self.comm.terminate()
+        self.neuro.terminate()
+        print("Terminated CREPE processes")
 
 if __name__ == "__main__":
-    main()
+    crep = CREPE()
+    crep.start("__TESTING")

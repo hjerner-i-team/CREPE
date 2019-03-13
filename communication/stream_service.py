@@ -7,6 +7,7 @@ import rpyc
 from enum import Enum
 import numpy as np
 from settings import STREAM_DIMENSION
+import time
 
 # WARNING The following enum is not currently usefull. 
 # Enum to represent which mode the DataProxy should be in
@@ -272,6 +273,23 @@ class StreamRowIterator():
         self.index += len(row_segment)
 
         return row_segment
+    
+    # gets the next set of data from the stream or waints for the the next set
+    # @param _conn is the rpc connection object
+    # @param sleep is the amount of seconds between calls
+    # @param timeout is the amount of x * sleep seconds with no data we can recive before returning False.
+    def next_or_wait(self, conn, sleep = 0.1, timeout = None):
+        i = 0
+        while True:
+            i += 1
+            row = self.next(conn)
+            if row is not False:
+                return row
+            else:
+                time.sleep(sleep)
+                if timeout != None and i > timeout:
+                    break
+        return False
 
 # Iterates over segments in the stream
 class StreamSegmentIterator(): 
@@ -297,6 +315,22 @@ class StreamSegmentIterator():
 
         return stream_segment
 
+    # gets the next set of data from the stream or waints for the the next set
+    # @param _conn is the rpc connection object
+    # @param sleep is the amount of seconds between calls
+    # @param timeout is the amount of x * sleep seconds with no data we can recive before returning False.
+    def next_or_wait(self, conn, sleep = 0.1, timeout = None):
+        i = 0
+        while True:
+            i += 1
+            seg = self.next(conn)
+            if seg is not False:
+                return seg
+            else:
+                time.sleep(sleep)
+                if timeout != None and i > timeout:
+                    break
+        return False
 """
 
 DEBUG CODE:
