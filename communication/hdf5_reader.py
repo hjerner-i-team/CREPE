@@ -15,20 +15,20 @@ path_to_test_data = sys.path[0][0:-1 * len("/CREPE")] + "/test_data/"
 
 class HDF5Reader(StreamService):
 
-    def __init__(self, _filename="4.h5"):
+    def __init__(self, file_path="4.h5"):
         StreamService.__init__(self, DataModus.DATA)
-        self.filename = _filename
+        self.file_path = file_path
 
     # Generates a 2d numpy array from a .h5 file to self.stream
     # @dev TODO implement dynamic filesnames or something
     def generate_H5_stream(self): 
+        print("Generating stream from h5 file: ", self.file_path)
         # open the file with h5py
-        f = h5py.File(path_to_test_data + self.filename, 'r') 
+        f = h5py.File(self.file_path, 'r') 
         # navigate to where the raw data is in the .h5 file
         # Use the program hdfviewer or check our upcomming documentation for full .h5 format
         data = f['Data']['Recording_0']['AnalogStream']['Stream_0']['ChannelData']
         # this will return a h5py object so we convert it to a list
-        print("Len ", len(data), " Len[0] ", len(data[0]))
         self.append_stream_segment_data(list(data))
 
     # Generates a 2d matrice with random numbers to self.stream for testing purposes

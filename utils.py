@@ -8,16 +8,22 @@ import rpyc
 from settings import RPCPORTS, RPYC_CONFIG
 import time
 
-
-def get_stream_connection():
-    t = 0.1
+# Waints for and returns a rpyc connection 
+# @param port is a port defined in RPCPORT
+# @returns an rpyc connection object
+def get_connection(port):
+    t = 0.5
     i = 0
     while True:
-        print("trying")
+        if i != 1 and i % 10 == 1:
+            print("... still wainting for ", port, " connection")
         try:
-            return rpyc.connect("localhost", RPCPORTS["STREAM"], config=RPYC_CONFIG)
+            conn = rpyc.connect("localhost", RPCPORTS[port], config=RPYC_CONFIG)
+            print("Got the ", port, " connection! :)")
+            return conn
         except:
+            if i == 0:
+                print("Waiting for a connection to the ", port, " server") 
             time.sleep(t)
-            if i > 100:
-                raise ValueError("Connection could not be esthablised")
         i += 1
+
