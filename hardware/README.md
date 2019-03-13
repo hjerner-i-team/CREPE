@@ -1,12 +1,16 @@
-# Project Title
+# Rock, Paper, Scissors Demo Setup
 
-One Paragraph of project description goes here
+Arduino Uno equipped with IR-sensor, wifi-module and 120x128 1.44" display  captures IR profile of rock/paper/scissor and transmits to dev server in json format.
 
-## Getting Started
+## Rough overview of physical configuration
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
 
-### Prerequisites
+### Intented purpose
+TODO :: Fix broken fraseing
+The intention of this demo setup is to demonstrate the CREPE (tm)  "communications system" (?). The Arduino Uno will communicate the sensor data to the CREPE system, which will handle the data and communicate this further to MEAME and the biological resorvoir nuerons, intepereate the results and communicate this back to the Arduino which will display the results on a LCD display mounted on the container.   
+
+
+#### Detailed overview of complete setup
 
 What things you need to install the software and how to install them
 
@@ -14,9 +18,10 @@ What things you need to install the software and how to install them
 Give examples
 ```
 
-### Installing
+### Installation
 
-A step by step series of examples that tell you how to get a development env running
+"Plug an play repository. To recreate this demonstration, Download the repository and follow instructions given in comments on each source file. Upload to arduino. All code in this repository is intended to run on the Arduino.
+A step by step series of examples that tell you how to get a development env running"
 
 Say what the step will be
 
@@ -32,35 +37,9 @@ until finished
 
 End with an example of getting some data out of the system or using it for a little demo
 
-## Running the tests
+## Use
 
-Explain how to run the automated tests for this system
 
-### Break down into end to end tests
-
-Explain what these tests test and why
-
-```
-Give an example
-```
-
-### And coding style tests
-
-Explain what these tests test and why
-
-```
-Give an example
-```
-
-## Deployment
-
-Add additional notes about how to deploy this on a live system
-
-## Built With
-
-* [Dropwizard](http://www.dropwizard.io/1.0.2/docs/) - The web framework used
-* [Maven](https://maven.apache.org/) - Dependency Management
-* [ROME](https://rometools.github.io/rome/) - Used to generate RSS Feeds
 
 ## Contributing
 
