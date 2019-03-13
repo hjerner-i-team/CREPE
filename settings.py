@@ -1,5 +1,5 @@
 RPCPORTS = {
-        "HDF5Reader": 18861,
+        "STREAM": 18861,
 }
 
 import rpyc

@@ -36,7 +36,7 @@ If using windows then follow the same instructions in this link: https://docs.py
 """ Import fix - check README for documentation """ 
 import os,sys,inspect 
 __currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-sys.path.insert(0, __currentdir[0:__currentdir.find("software/src")+len("software/src")])
+sys.path.insert(0, __currentdir[0:__currentdir.find("CREPE")+len("CREPE")])
 """ End import fix """
 ```
 
@@ -46,7 +46,7 @@ sys.path.insert(0, __currentdir[0:__currentdir.find("software/src")+len("softwar
 The import system in python is literally garbage in semi-large projects. You can't import 
 modules above package directory and import paths will differ when you run the file directly and
 when the file is imported elsewhere. The fix for this is to root all imports in the root folder.
-In our case `CREPE/software/src/`. Meaning that all python files can import as if they lived in
+In our case `CREPE`. Meaning that all python files can import as if they lived in
 the root folder. 
 
 Thanks to https://chrisyeh96.github.io/2017/08/08/definitive-guide-python-imports.html and
@@ -55,12 +55,34 @@ https://stackoverflow.com/a/11158224 to guide us to the solution
 `__currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))`
 Gets the current directory of the file
 
-`sys.path.insert(0, __currentdir[0:__currentdir.find("software/src")+len("software/src")])`
-It first finds this projects folders absolute path. (/CREPE/) and then adds "software/src" to it
-And then inserts the new path into the sys.path. This new path overrides the original path.
-The new path looks something like `/home/user/projects/CREPE/software/src' 
+`sys.path.insert(0, __currentdir[0:__currentdir.find("CREPE")+len("CREPE")])`
+It first finds this projects folders absolute path. And then inserts the new path into the sys.path. This new path overrides the original path. The new path looks something like `/home/user/projects/CREPE/' 
 
 # Documentation
+
+## CREPE - main.py
+```
+class CREPE():
+    # start all the processe 
+    # @param data_file_path is the file path to an optional .h5 file
+    def __init__(self, data_file_path = None ):
+    
+    # Function that runs the required shutdown commands before the project is closed 
+    def shutdown(self):
+```
+### \_\_init\_\_.py
+To make things easy we have also included an easy import of the CREPE class
+```
+# import CREPE.main and start it 
+import main
+def CREPE( path_to_file = None ):
+    return main.CREPE(path_to_file)
+```
+You can use this in any file like this
+```
+from CREPE import CREPE
+crep = CREPE(path_to_file)
+```
 
 ## Settings.py
 The settings file is located `software/src/settings.py`
@@ -96,8 +118,7 @@ It is very easy to use and provides us with all the functionality we need. It is
 This documentation will only cover this project. Check out RPyC's documentation to learn how it works.
 
 ### How to use:
-For an example, look at `software/src/communication/hdf5_reader.py` and
-`software/src/neuro_processing/primary_dataloops/implementations/example/readout_layer.py`
+For an example, look at the SSP repo
 
 #### Expose self (push data)
 
@@ -139,7 +160,7 @@ def append_stream_segment_data(self, _new_data):
 Add the name of the service with a random free port to `software/src/settings.py`
 `
 RPCPORTS = {
-    "HDF5Reader": 18861,
+    "STREAM": 18861,
 }
 `
 
@@ -204,6 +225,13 @@ class StreamRowIterator():
     # @param _conn is the rpc connection object
     def next(self, _conn): 
         ...
+    
+    # gets the next set of data from the stream or waints for the the next set
+    # @param _conn is the rpc connection object
+    # @param sleep is the amount of seconds between calls
+    # @param timeout is the amount of x * sleep seconds with no data we can recive before returning False.
+    def next_or_wait(self, conn, sleep = 0.1, timeout = None):
+        ...
 
 
 # Iterates over segments in the stream
@@ -217,6 +245,13 @@ class StreamSegmentIterator():
     # @returns 2D stream segment with row length 1 < x < self.range or False
     def next(self, _conn): 
         ...
+        
+    # gets the next set of data from the stream or waints for the the next set
+    # @param _conn is the rpc connection object
+    # @param sleep is the amount of seconds between calls
+    # @param timeout is the amount of x * sleep seconds with no data we can recive before returning False.
+    def next_or_wait(self, conn, sleep = 0.1, timeout = None):
+        ...
 ```
 
 Use these iterators like this
@@ -227,10 +262,19 @@ from stream_service import StreamSegmentIterator, StreamRowIterator
 rowIter = StreamRowIterator(_channel=0, _range=100)
 while True:
     # c is the rpyc connection
-    data = rowIter.next(c)
-    if not data:
+    data = rowIter.next_or_wait(c, timeout=1)
+    if data is False:
         break
 
-    # do stuff with data:
-    
+    # do stuff with data 
 ```
+
+## utils.py
+This file will include nice-to-have functions
+
+```   
+   # Waints for and returns a rpyc connection  
+   # @param port is a port defined in RPCPORT  
+   # @returns an rpyc connection object        
+   def get_connection(port): 
+``` 

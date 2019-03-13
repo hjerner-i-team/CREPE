@@ -7,6 +7,7 @@ import rpyc
 from enum import Enum
 import numpy as np
 from settings import STREAM_DIMENSION
+import time
 
 # WARNING The following enum is not currently usefull. 
 # Enum to represent which mode the DataProxy should be in
@@ -171,7 +172,6 @@ class StreamService(rpyc.Service):
     # @returns a segmented 2d array where each row has equal dimensions or False
     def get_stream_segment(self, _range, _startIndex):
         self._raiseErrorOnNullStream()
-        print("in get_stream_segment: _range: ", _range, " _startIndex: ", _startIndex)
 
         """ Example: 
         Original stream: 
@@ -192,7 +192,7 @@ class StreamService(rpyc.Service):
                 for x in range(len(self.stream))]
         
         # make sure that the segment is complete by checking that none is false
-        if not all(x != False for x in seg):
+        if not all(x is not False for x in seg):
             return False
 
         # check if dimensions are correct/clean
@@ -201,7 +201,6 @@ class StreamService(rpyc.Service):
             # now we must find the shortest dimension and cut the entire segment to that length
             smallest = min(lens)
             seg = [row[0:smallest] for row in seg]
-        print(len(self.stream), len(self.stream[0]))
         return seg
 
     # Get a subset of a channels data
@@ -213,9 +212,8 @@ class StreamService(rpyc.Service):
     # @returns a segmented 1d array or False
     def exposed_get_row_segment(self, _row, _range, _startIndex, _callback=None):
         data = self.get_row_segment(_row, _range, _startIndex)
-        
         # check if we got a false value
-        if not data:
+        if data is False:
             if _callback == None:
                 return False
             # Make a callback object
@@ -237,7 +235,7 @@ class StreamService(rpyc.Service):
         data = self.get_stream_segment(_range, _startIndex)
         
         # check if we got a false value
-        if not data:
+        if data is False:
             if _callback == None:
                 return False
             # Make a callback object
@@ -266,15 +264,32 @@ class StreamRowIterator():
     def next(self, _conn): 
         # Get data from rpc
         row_segment = _conn.root.get_row_segment(self.channel, self.range, self.index)
-        
+
         # Check that we got data
-        if not row_segment:
+        if row_segment is False:
             return False
 
         # Increase the iteration index
         self.index += len(row_segment)
 
         return row_segment
+    
+    # gets the next set of data from the stream or waints for the the next set
+    # @param _conn is the rpc connection object
+    # @param sleep is the amount of seconds between calls
+    # @param timeout is the amount of x * sleep seconds with no data we can recive before returning False.
+    def next_or_wait(self, conn, sleep = 0.1, timeout = None):
+        i = 0
+        while True:
+            i += 1
+            row = self.next(conn)
+            if row is not False:
+                return row
+            else:
+                time.sleep(sleep)
+                if timeout != None and i > timeout:
+                    break
+        return False
 
 # Iterates over segments in the stream
 class StreamSegmentIterator(): 
@@ -292,7 +307,7 @@ class StreamSegmentIterator():
         stream_segment = _conn.root.get_stream_segment(self.range, self.index)
         
         # Check that we got data
-        if not stream_segment:
+        if stream_segment is False:
             return False
 
         # Increase the iteration index
@@ -300,6 +315,22 @@ class StreamSegmentIterator():
 
         return stream_segment
 
+    # gets the next set of data from the stream or waints for the the next set
+    # @param _conn is the rpc connection object
+    # @param sleep is the amount of seconds between calls
+    # @param timeout is the amount of x * sleep seconds with no data we can recive before returning False.
+    def next_or_wait(self, conn, sleep = 0.1, timeout = None):
+        i = 0
+        while True:
+            i += 1
+            seg = self.next(conn)
+            if seg is not False:
+                return seg
+            else:
+                time.sleep(sleep)
+                if timeout != None and i > timeout:
+                    break
+        return False
 """
 
 DEBUG CODE:
