@@ -1,17 +1,31 @@
-# Rock, Paper, Scissors Demo Setup
+# Rock, Paper, Scissors demonstration
+A demonstration of the CREPE communication framwork utilizing hardware, sensor data and network communications. 
 
-Arduino Uno equipped with IR-sensor, wifi-module and 120x128 1.44" display  captures IR profile of rock/paper/scissor and transmits to dev server in json format.
-
-## Rough overview of physical configuration
-
-
-### Intented purpose
-TODO :: Fix broken fraseing
-The intention of this demo setup is to demonstrate the CREPE (tm)  "communications system" (?). The Arduino Uno will communicate the sensor data to the CREPE system, which will handle the data and communicate this further to MEAME and the biological resorvoir nuerons, intepereate the results and communicate this back to the Arduino which will display the results on a LCD display mounted on the container.   
+Data is captured and transmitted to CREPE. Results recieved from CREPE are displayed on integrated LCD display. 
 
 
-#### Detailed overview of complete setup
+### Intention
+This demonstration is a simple example use case of the CREPE framework, demonstrating how CREPE allows for seemless and effortless experimentation with biological neurons. 
 
+The demo setup will capture the IR profile of a rock/paper/scissor and trasmitt this in json format throigh wifi to CREPE. CREPE will communcate the data further to the biological neurons, interpretate the results and transmitt these back to the demo setup, which will display the result on a display. 
+
+
+### Setup of demo, physical components and configuraton
+
+The components used in the setup:
+- Arudino Uno       
+  - [Datasheet](https://www.terraelectronica.ru/pdf/show?pdf_file=%2Fz%2FDatasheet%2FU%2FUNO_R3(CH340G).pdf&fbclid=IwAR2FrlMjTS1hMZOYdpzgNwjVe-th5LTBIL-3l3MgKYxddCArinXqffufGAc)
+- ESP8266 SMT module (Wifi module)
+  - [Datasheet](http://wiki.ai-thinker.com/_media/esp8266/docs/a001ps01a2_esp-01_product_specification_v1.2.pdf?fbclid=IwAR2E6Dpguf-HQLodjZ8DdVEVA4pAAcRWWhqb_sUmmcb46i1hmuMgdBjYaW4)
+- Adafruit AMG8833   (IR-sensor)
+  - [Datasheet](https://cdn-learn.adafruit.com/downloads/pdf/adafruit-amg8833-8x8-thermal-camera-sensor.pdf?timestamp=1552457921)
+- Adafruit 1.44" Color TFT LCD Display 
+  - [Datasheet](https://cdn-learn.adafruit.com/downloads/pdf/adafruit-1-44-color-tft-with-micro-sd-socket.pdf?timestamp=1552457427)
+
+Arduino Uno equipped with IR-sensor, wifi-module and 128x128 1.44" LCD display contained in a physical container, captures IR profile of rock/paper/scissor and transmits to CREPE in json format. Results recieved from CREPE are displayed on  LCD display. Arduino located inside the container, LCD display mounted on the exterior of container. 
+
+
+### Requisites 
 What things you need to install the software and how to install them
 
 ```
