@@ -171,7 +171,6 @@ class StreamService(rpyc.Service):
     # @returns a segmented 2d array where each row has equal dimensions or False
     def get_stream_segment(self, _range, _startIndex):
         self._raiseErrorOnNullStream()
-        print("in get_stream_segment: _range: ", _range, " _startIndex: ", _startIndex)
 
         """ Example: 
         Original stream: 
@@ -192,7 +191,7 @@ class StreamService(rpyc.Service):
                 for x in range(len(self.stream))]
         
         # make sure that the segment is complete by checking that none is false
-        if not all(x != False for x in seg):
+        if not all(x is not False for x in seg):
             return False
 
         # check if dimensions are correct/clean
@@ -201,7 +200,6 @@ class StreamService(rpyc.Service):
             # now we must find the shortest dimension and cut the entire segment to that length
             smallest = min(lens)
             seg = [row[0:smallest] for row in seg]
-        print(len(self.stream), len(self.stream[0]))
         return seg
 
     # Get a subset of a channels data
@@ -291,7 +289,7 @@ class StreamSegmentIterator():
         stream_segment = _conn.root.get_stream_segment(self.range, self.index)
         
         # Check that we got data
-        if not stream_segment:
+        if stream_segment is False:
             return False
 
         # Increase the iteration index
