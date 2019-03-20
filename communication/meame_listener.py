@@ -115,6 +115,7 @@ class MeameListener(StreamService):
                 chunk = np.asarray(data, dtype=np.int).reshape(chunk_dim)
 
                 self.append_stream_segment_data(chunk)
+                # print("Appended one chunk to stream")
 
                 n_chunks += 1
 
