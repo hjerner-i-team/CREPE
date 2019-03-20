@@ -1,6 +1,8 @@
 RPCPORTS = {
+        "LISTENER": 18860,
         "STREAM": 18861,
 }
+
 
 # generates a new RPCPORT and adds it to RPCPORTS
 # @param name is the name of the port

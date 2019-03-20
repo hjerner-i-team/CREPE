@@ -14,9 +14,10 @@ import os
 import json
 import time
 import requests
+from multiprocessing import Process
 
 
-class MeameListener:
+class MeameListener(StreamService):
 
     def send_start(self):
         r = requests.get(self.url + '/DAQ/start')
@@ -118,3 +119,4 @@ class MeameListener:
                 n_chunks += 1
 
             print("Connection closed. Recieved {} chunks".format(n_chunks))
+
