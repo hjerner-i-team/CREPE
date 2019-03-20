@@ -16,14 +16,14 @@ def get_connection(port):
     i = 0
     while True:
         if i != 1 and i % 10 == 1:
-            print("... still wainting for ", port, " connection")
+            print("[CREPE.utils.get_connection] ... still wainting for ", port, " connection")
         try:
             conn = rpyc.connect("localhost", RPCPORTS[port], config=RPYC_CONFIG)
-            print("Got the ", port, " connection! :)")
+            print("[CREPE.utils.get_connection] Got the ", port, " connection! :)")
             return conn
         except:
             if i == 0:
-                print("Waiting for a connection to the ", port, " server") 
+                print("[CREPE.utils.get_connection] Waiting for a connection to the ", port, " server") 
             time.sleep(t)
         i += 1
 

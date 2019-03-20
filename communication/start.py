@@ -10,8 +10,8 @@ from settings import RPCPORTS, RPYC_CONFIG
 
 def main(data_file_path=None):
     if data_file_path == None:
-        print("Starting stream")
-        print("Error, stream is not implemented yet")
+        print("[CREPE.communication.start] Starting stream")
+        print("[CREPE.communication.start] Error, stream is not implemented yet")
     else:
         h5 = HDF5Reader( data_file_path )
         if data_file_path == "__TESTING":

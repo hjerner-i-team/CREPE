@@ -22,7 +22,7 @@ class HDF5Reader(StreamService):
     # Generates a 2d numpy array from a .h5 file to self.stream
     # @dev TODO implement dynamic filesnames or something
     def generate_H5_stream(self): 
-        print("Generating stream from h5 file: ", self.file_path)
+        print("[CREPE.commnication.hdf5_reader] Generating stream from h5 file: ", self.file_path)
         # open the file with h5py
         f = h5py.File(self.file_path, 'r') 
         # navigate to where the raw data is in the .h5 file
@@ -30,10 +30,11 @@ class HDF5Reader(StreamService):
         data = f['Data']['Recording_0']['AnalogStream']['Stream_0']['ChannelData']
         # this will return a h5py object so we convert it to a list
         self.append_stream_segment_data(list(data))
+        print("[CREPE.communication.hdf5_reader] data pushed to stream")
 
     # Generates a 2d matrice with random numbers to self.stream for testing purposes
     def generate_random_test_stream(self):
-        print("Generating random test stream")
+        print("[CREPE.communication.hdf5_reader] Generating random test stream")
         # generate a 2d numpy matrice of random values between 0 & 1
         rand_data = np.random.rand(60,1000)
         # multiply it by 200 to "simulate" real data
