@@ -12,30 +12,48 @@ __currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfr
 sys.path.insert(0, __currentdir[0:__currentdir.find("CREPE")+len("CREPE")])
 """ End import fix """
 
-from multiprocessing import Process
-from communication.start import main as communication_main
-from neuro_processing.start import main as neuro_main
+from enum import Enum
+from communication.hdf5_reader import HDF5Reader
+
+# Enum to represet which modus crepe can be in
+# LIVE - live connection with meame
+# FILE - get data from an h5 file
+class CrepeModus(Enum):
+    LIVE = 0
+    FILE = 1
 
 class CREPE():
-    # start all the processe 
+
+    # starts the required communication services and inits crepe
+    # @param modus is a CrepeModus enum
     # @param data_file_path is the file path to an optional .h5 file
-    def __init__(self, data_file_path = None ):
-        print("[CREPE] Starting CREPE processes")
-        self.comm = Process(target=communication_main, args=[data_file_path])
-        self.neuro = Process(target=neuro_main)
-        
-        self.comm.start()
-        self.neuro.start()
-        
-        #self.neuro.join()
-        #self.comm.join()
+    def __init__(self, modus=CrepeModus.LIVE, data_file_path = None ):
+        self.modus = modus
+        self.stream_services = []
+
+        if modus == CrepeModus.LIVE:
+            # TODO - since live is not yet implemented we generate a test stream
+            test = HDF5Reader(data_file_path)
+            test.generate_random_test_stream()
+            test.start_service("STREAM")
+            self.stream_services.append(test)
+
+        elif modus == CrepeModus.FILE:
+            # initates a h5 reader and start the service
+            h5 = HDF5Reader(data_file_path)
+            h5.generate_h5_stream()
+            h5.start_service("STREAM")
+            self.stream_services.append(h5)
+        else:
+            raise ValueError("Wrong crepe modus supplied")
 
     # Function that runs the required shutdown commands before the project is closed 
     def shutdown(self):
-        self.comm.terminate()
-        self.neuro.terminate()
-        print("Terminated CREPE processes")
+        for x in self.stream_services:
+           print("[CREPE] Terminating ", x.name)
+           x.terminate_service()
+        print("[CREPE] Terminated all CREPE processes")
 
 if __name__ == "__main__":
     crep = CREPE()
-    crep.start("__TESTING")
+    crep.shutdown()

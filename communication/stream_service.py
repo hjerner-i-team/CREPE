@@ -6,8 +6,11 @@
 import rpyc
 from enum import Enum
 import numpy as np
-from settings import STREAM_DIMENSION
+from settings import STREAM_DIMENSION, RPCPORTS, RPYC_CONFIG
 import time
+from rpyc.utils.server import ThreadedServer
+from multiprocessing import Process
+
 
 # WARNING The following enum is not currently usefull. 
 # Enum to represent which mode the DataProxy should be in
@@ -245,6 +248,24 @@ class StreamService(rpyc.Service):
             return False
 
         return data
+    
+    # internal method - starts an rpyc RPC server on itself
+    # @param name_of_service check start_service
+    def _start_thread(self, name_of_service):
+        self.thread = ThreadedServer(self, port=RPCPORTS[name_of_service], protocol_config=RPYC_CONFIG)
+        self.thread.start()
+
+    # Start to expose self 
+    # @dev starts an rpyc RPC server on itself.
+    # @param name_of_service the name of this service with a corresponding RPCPORTS entry
+    def start_service(self, name_of_service):         
+        self.name = name_of_service
+        self.thread_process = Process(target=self._start_thread, args=[name_of_service])
+        self.thread_process.start()
+    
+    # Terminates the rpyc rpc server
+    def terminate_service(self):
+        self.thread_process.terminate()
 
     def testgetstream(self,_range, _startIndex, _callback):
         return self.exposed_get_stream_segment(_range, _startIndex, _callback)
