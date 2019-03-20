@@ -46,7 +46,7 @@ class MeameListener(StreamService):
     def __init__(self, server_adress, port, segmentLength = 100, samplerate = 10000):
         # self.server_adress = '10.20.92.130'
         # self.port = 12340
-        StreamService.__init__(self, DataModus.DATA)
+        StreamService.__init__(self, "STREAM", DataModus.DATA)
 
         self.server_adress = server_adress
         self.port = port

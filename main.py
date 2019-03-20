@@ -39,7 +39,7 @@ class CREPE():
             listener = MeameListener("10.20.92.130", 12340)
             # test.generate_random_test_stream()
 
-            listener.start_service("STREAM", listener.listen)
+            listener.start_loop("STREAM", listener.listen, [])
             # self.stream_services.append(test)
 
 
