@@ -11,19 +11,20 @@ import time
 # Waints for and returns a rpyc connection 
 # @param port is a port defined in RPCPORT
 # @returns an rpyc connection object
-def get_connection(port):
+def get_connection(name_of_service):
+
     t = 0.5
     i = 0
     while True:
         if i != 1 and i % 10 == 1:
-            print("[CREPE.utils.get_connection] ... still wainting for ", port, " connection")
+            print("[CREPE.utils.get_connection] ... still wainting for ", name_of_service, " connection")
         try:
-            conn = rpyc.connect("localhost", RPCPORTS[port], config=RPYC_CONFIG)
-            print("[CREPE.utils.get_connection] Got the ", port, " connection! :)")
+            conn = rpyc.connect("localhost", RPCPORTS[name_of_service], config=RPYC_CONFIG)
+            print("[CREPE.utils.get_connection] Got the ", name_of_service, " connection! :)")
             return conn
         except:
             if i == 0:
-                print("[CREPE.utils.get_connection] Waiting for a connection to the ", port, " server") 
+                print("[CREPE.utils.get_connection] Waiting for a connection to the ", name_of_service, " server") 
             time.sleep(t)
         i += 1
 
