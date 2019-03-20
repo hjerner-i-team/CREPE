@@ -164,14 +164,13 @@ def auto_transmit(json_msg):
     elif 'message' in json_obj: 
         request = meame_transmit('log', json_msg)
     else: 
-        # If no messages match throw exception
-        pass # TODO
-    
+        # If no messages match, throw exception
+        raise ValueError("Auto_transmit could not find a field with valid rule.")
     return  request
 
 def meame_transmit(destination, json_msg=None):
     '''
-    Generic method for transmissions to MEAME
+    Generic method for JSON transmissions to MEAME
 
     Example usage: 
     meame_transmit('status') gets current DSP status
@@ -208,18 +207,27 @@ def get_dsp_status(do_print=False):
         print(response_string)
     return response_string
 
-def meame_set_stim(group_num, period):
+def set_stim(group_num, period):
     '''
-    Apply stimulation to a stim group 
-    :param
+    Apply stimulation to a predefined stim group 
+    TODO: This code is unverified!
+    :param int group_num: Predefined number of target group
+    :param int period: Period to apply TODO: UNIT
     '''
     # 9: SET ELECTRODE GROUP PERIOD
     # 10: ENABLE STIME GROUP
     
-    #commands = [
-    #    dsp_func_call
-    pass
-     
+    commands = [
+        dsp_set_elec_grp_period( 
+            [STIM_QUEUE_GROUP, STIM_QUEUE_PERIOD], 
+            # TODO: PERIOD
+            [0, 5000]
+        ), 
+        dsp_enable_stim_grp(group_num)
+    ]
+    for command in commands:
+        auto_transmit(command)
+
 
 # DSP function wrappers
 # ------------------------------------------------------------------------------
@@ -236,7 +244,7 @@ def dsp_dump():
 
 def dsp_reset():
     '''
-    TODO
+    Reset the dsp. TODO: Why?
     Returns a serialized json object string
     '''
     return dsp_func_call(2)
@@ -298,12 +306,13 @@ def dsp_set_elec_grp_period(arg_addrs=[], arg_vals=[]):
     '''
     return dsp_func_call(9, arg_addrs, arg_vals)
 
-def dsp_enable_stim_grp():
+def dsp_enable_stim_grp(group_number):
     '''
-    TODO
+    Activate a single group of stimulation electrodes.
+    :param int group_number: The number given to the selected group
     Returns a serialized json object string
     '''
-    return dsp_func_call(10)
+    return dsp_func_call(10, [STIM_QUEUE_GROUP], [group_number])
 
 def dsp_disable_stim_grp():
     '''
