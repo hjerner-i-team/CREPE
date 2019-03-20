@@ -43,7 +43,8 @@ class Callback():
 # @dev Data is exposed trough a "pull" scheme. Call the exposed functions to get data
 class StreamService(rpyc.Service): 
 
-    def __init__(self, _dataModus=DataModus.TESTING):
+    def __init__(self, name, _dataModus=DataModus.TESTING):
+        self.name = name
         # Check if the enum atribute is an enum of type DataModus
         if not isinstance(_dataModus, DataModus):
             raise ValueError("Did not recive an DataModus enum")
@@ -252,26 +253,34 @@ class StreamService(rpyc.Service):
     # internal method - starts an rpyc RPC server on itself
     # @param name_of_service check start_service
     def _start_rpc_thread(self, name_of_service):
+        print("[CREPE.communication.stream_service] Starting ", name_of_service, " rpc server")
         self.thread = ThreadedServer(self, port=RPCPORTS[name_of_service], protocol_config=RPYC_CONFIG)
         self.thread.start()
  
+
+    def _start_loop(self, name_of_service, loop_function, loop_args):
+        self.thread_process = Process(target=self._start_rpc_thread, args=[name_of_service])
+        self.thread_process.start(target)
+        
+        print("[CREPE.communication.stream_service] Starting ", name_of_service, " loop")
+        loop_function(loop_args) 
+        print("[CREPE.communication.stream_service] After ", name_of_service, " loop")
+        
+        
+
     # Start to expose self and start a main loop function
     # @dev starts an rpyc RPC server on itself.
     # @param name_of_service the name of this service with a corresponding RPCPORTS entry
-    def start_service(self, name_of_service, loop_function, loop_args=[]):
-        self.loop_function = loop_function
-        self.name = name_of_service
-
-        self.loop_process = Process(target=self.loop_function, args=loop_args)
-        self.thread_process = Process(target=self._start_rpc_thread, args=[name_of_service])
-
+    def start_loop(self, name_of_service, loop_function, loop_args=[]):
+        print("[CREPE.communication.stream_service] Starting ", name_of_service, " loop and rpc server")
+        self.loop_process = Process(target=self._start_loop, args=[name_of_service, loop_function]+loop_args)
         self.loop_process.start()
-        self.thread_process.start()
     
     # Terminates the rpyc rpc server
     def terminate_service(self):
-        self.loop_process.terminate()
-        self.thread_process.terminate()
+        #self.loop_process.terminate()
+        pass
+        #self.thread_process.terminate()
 
     def testgetstream(self,_range, _startIndex, _callback):
         return self.exposed_get_stream_segment(_range, _startIndex, _callback)
