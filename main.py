@@ -41,7 +41,7 @@ class CREPE():
         elif modus == CrepeModus.FILE:
             # initates a h5 reader and start the service
             h5 = HDF5Reader(path_to_file)
-            h5.generate_h5_stream()
+            h5.generate_H5_stream()
             h5.start_service("STREAM")
             self.stream_services.append(h5)
         else:
