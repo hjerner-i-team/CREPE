@@ -27,20 +27,20 @@ class CREPE():
     # starts the required communication services and inits crepe
     # @param modus is a CrepeModus enum
     # @param data_file_path is the file path to an optional .h5 file
-    def __init__(self, modus=CrepeModus.LIVE, data_file_path = None ):
+    def __init__(self, modus=CrepeModus.LIVE, path_to_file= None ):
         self.modus = modus
         self.stream_services = []
 
         if modus == CrepeModus.LIVE:
             # TODO - since live is not yet implemented we generate a test stream
-            test = HDF5Reader(data_file_path)
+            test = HDF5Reader(path_to_file)
             test.generate_random_test_stream()
             test.start_service("STREAM")
             self.stream_services.append(test)
 
         elif modus == CrepeModus.FILE:
             # initates a h5 reader and start the service
-            h5 = HDF5Reader(data_file_path)
+            h5 = HDF5Reader(path_to_file)
             h5.generate_h5_stream()
             h5.start_service("STREAM")
             self.stream_services.append(h5)

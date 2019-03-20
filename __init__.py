@@ -7,5 +7,5 @@ sys.path.insert(0, __currentdir[0:__currentdir.find("CREPE")+len("CREPE")])
 
 # import CREPE.main and start it 
 import main
-def CREPE( path_to_file = None ):
-    return main.CREPE(path_to_file)
+def CREPE(modus=main.CrepeModus.LIVE, path_to_file = None ):
+    return main.CREPE(modus=modus, path_to_file=path_to_file)
