@@ -33,16 +33,16 @@ class CREPE():
 
         if modus == CrepeModus.LIVE:
             # TODO - since live is not yet implemented we generate a test stream
-            test = HDF5Reader(path_to_file)
+            test = HDF5Reader("STREAM", path_to_file)
             test.generate_random_test_stream()
-            test.start_service("STREAM")
+            #test.start_service("STREAM")
             self.stream_services.append(test)
 
         elif modus == CrepeModus.FILE:
             # initates a h5 reader and start the service
-            h5 = HDF5Reader(path_to_file)
+            h5 = HDF5Reader("STREAM", path_to_file)
             h5.generate_H5_stream()
-            h5.start_service("STREAM")
+            h5._start_rpc_server("STREAM")
             self.stream_services.append(h5)
         else:
             raise ValueError("Wrong crepe modus supplied")

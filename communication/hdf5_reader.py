@@ -15,8 +15,8 @@ path_to_test_data = sys.path[0][0:-1 * len("/CREPE")] + "/test_data/"
 
 class HDF5Reader(StreamService):
 
-    def __init__(self, file_path="4.h5"):
-        StreamService.__init__(self, DataModus.DATA)
+    def __init__(self, name, file_path="4.h5"):
+        StreamService.__init__(self, name, DataModus.DATA)
         self.file_path = file_path
 
     # Generates a 2d numpy array from a .h5 file to self.stream
