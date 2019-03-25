@@ -60,24 +60,21 @@ def template_setup():
         dsp_write_sq_dbg(),  # Write SQ debug
         dsp_set_elec_grp_auto(),  # Set electrode group auto
         dsp_stop_stim_queue(),  # Stop stim queue
-        dsp_reset(),  # Reset
-        reg_write_req([37388], [0]),
+        dsp_reset(),
+        reg_write_req([WRT_PTR_STIM_1], [0]),
         dsp_stop_stim_queue(),  # Stop stim queue
-        reg_write_req(
-            [STG_MWRITE1, STG_MWRITE1], 
-            [32593, 1671343]
-        ),
-        reg_write_req([37420], [0]),
+        reg_write_req([STG_MWRITE1, STG_MWRITE1], [32593, 1671343]),
+        reg_write_req([WRT_PTR_STIM_2], [0]),
         reg_write_req([STG_MWRITE2, STG_MWRITE2], [32211289, 655385]),
-        reg_write_req([37452], [0]),
+        reg_write_req([WRT_PTR_STIM_3], [0]),
         dsp_stop_stim_queue(),  # Stop stim queue
         reg_write_req([STG_MWRITE3, STG_MWRITE3], [32593, 1671343]),
-        reg_write_req([37484], [0]),
+        reg_write_req([WRT_PTR_STIM_4], [0]),
         reg_write_req([STG_MWRITE4, STG_MWRITE4], [3211289, 655385]),
-        reg_write_req([37516], [0]), 
+        reg_write_req([WRT_PTR_STIM_5], [0]), 
         dsp_stop_stim_queue(),  # Stop stim queue
         reg_write_req([STG_MWRITE5, STG_MWRITE5], [32593, 1671343]), 
-        reg_write_req([37548], [0]),
+        reg_write_req([WRT_PTR_STIM_6], [0]),
         reg_write_req([STG_MWRITE6, STG_MWRITE6], [3211289, 655385]),  
         dsp_reset(),  # Reset
         # Set blanking protection
@@ -116,6 +113,9 @@ def template_setup():
         auto_transmit(command)
         
 def template_stim():
+    '''
+    Apply stimulation, just like the the remote equivalent does.
+    '''
     command = dsp_func_call(10, [STIM_QUEUE_GROUP], [0]) 
     auto_transmit(command)
 
@@ -262,6 +262,7 @@ def dsp_set_elec_grp_manual(arg_addrs=[], arg_vals=[]):
     '''
     In manual mode, each electrode will be configured only by the stimulus 
     select and enable registers.
+    Apply 
     :param int[] arg_addrs: Memory addresses of arguments
     :param int[] arg_vals: Values of arguments
     Returns a serialized json object string
