@@ -192,7 +192,7 @@ def meame_transmit(destination, json_msg=None):
         r=requests.get(full_dest)
     return r
 
-def get_dsp_status(do_print=False): 
+def dsp_get_status(do_print=False): 
     '''
     Display the DSP's current state of well-being. 
     
@@ -209,10 +209,13 @@ def get_dsp_status(do_print=False):
 
 def set_stim(group_num, period):
     '''
-    Apply stimulation to a predefined stim group 
+    Apply stimulation to a predefined stim group. 
+    The period, or time interval between wave peaks, is given as a 
+    multiple of 20 micro seconds.
+    Example: A period=5000 gives an applied period of 5000 * 20us = 0.1s
     TODO: This code is unverified!
     :param int group_num: Predefined number of target group
-    :param int period: Period to apply TODO: UNIT
+    :param int period: Period to apply, as a multiple of 20 micro seconds
     '''
     # 9: SET ELECTRODE GROUP PERIOD
     # 10: ENABLE STIME GROUP
@@ -227,6 +230,15 @@ def set_stim(group_num, period):
     ]
     for command in commands:
         auto_transmit(command)
+
+def define_elec_grp(group_num, electrodes):
+    '''
+    TODO
+    Allow user to define electrode groups without having to mess with bit-maps.
+    :param int group_num: Predefined number of target group
+    :param int[] electrodes: Select which electrodes should be part of it
+    '''
+    pass
 
 
 # DSP function wrappers
