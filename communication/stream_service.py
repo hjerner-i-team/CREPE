@@ -6,10 +6,11 @@
 import rpyc
 from enum import Enum
 import numpy as np
-from settings import STREAM_DIMENSION, RPCPORTS, RPYC_CONFIG
+from settings import RPYC_CONFIG
 import time
 from rpyc.utils.server import ThreadedServer
 from multiprocessing import Process
+import _thread
 
 
 # WARNING The following enum is not currently usefull. 
@@ -43,40 +44,41 @@ class Callback():
 # @dev Data is exposed trough a "pull" scheme. Call the exposed functions to get data
 class StreamService(rpyc.Service): 
 
-    def __init__(self, name, _dataModus=DataModus.TESTING):
+    def __init__(self, name, port, dataModus=DataModus.TESTING, channels=60):
         self.name = name
+        self.port = port
         # Check if the enum atribute is an enum of type DataModus
-        if not isinstance(_dataModus, DataModus):
+        if not isinstance(dataModus, DataModus):
             raise ValueError("Did not recive an DataModus enum")
-        self.modus = _dataModus
+        self.modus = dataModus
         
         # The stream array that will contain the data
         # If DataModus.DATA it will be 2d
         # Else if DataModus.RESULT it will be 1d
         # TODO add settings for dimensions
-        self.stream = [[] for x in range(0, STREAM_DIMENSION)]
+        self.stream = [[] for x in range(0, channels)]
 
         # Callback functions array
         self._row_segment_callbacks = []
         self._streams_segment_callbacks = []
 
         # If the modus is set to testing then generate test data
-        if _dataModus == DataModus.TESTING:
-            self.generate_random_test_stream()
+        if dataModus == DataModus.TESTING:
+            self.generate_random_test_stream(channels)
 
     # Raises error if self.stream is empty / not initialized
     def _raiseErrorOnNullStream(self):
         if self.stream is None:
             raise RuntimeError("stream was not generated")
-    
+   
     # Generates a 2d matrice with random numbers to self.stream for testing purposes
-    def generate_random_test_stream(self):
+    def generate_random_test_stream(self, channels):
         # check that stream is empty
         if all([ len(x) != 0 for x in self.stream ]):
             raise RuntimeError("Stream was not empty")
 
         # generate a 2d numpy matrice of random values between 0 & 1
-        rand_data = np.random.rand(59,1000)
+        rand_data = np.random.rand(channels,1000)
         # multiply it by 200 to "simulate" real data
         rand_data = rand_data * 200
         
@@ -110,8 +112,12 @@ class StreamService(rpyc.Service):
         elif isinstance(_new_data, np.ndarray):
             self.stream[_row] = np.append(self.stream[_row], _new_data)
         else:
-            self.stream[_row].append(_new_data)
-
+            if isinstance(self.stream[_row], list):
+                self.stream[_row].append(_new_data)
+            elif isinstance(self.stream[_row], np.ndarray):
+                self.stream[_row] = np.append(self.stream[_row], [_new_data])
+            else:
+                raise ValueError("self.stream not a list and not a np.ndarray???")
     # Appends new data to row
     # @param _row is one of the channels in self.stream
     # @param _new_data is either an array containing new data or a single value
@@ -129,9 +135,17 @@ class StreamService(rpyc.Service):
             raise ValueError("New data was not of correct dimensions")
         # Add the new data to stream
         for i in range(len(_new_data)):
-            if len(_new_data[i]) > 0:
+            # check if it is a list:
+            if isinstance(_new_data[i], list) or isinstance(_new_data[i], np.ndarray):
+                if len(_new_data[i]) > 0:
+                    self._append_stream_row_data_without_updating_callbacks(i, _new_data[i])
+            else:
                 self._append_stream_row_data_without_updating_callbacks(i, _new_data[i])
+
         self._update_callbacks()
+        tst = sum([sum(x) for x in self.stream])
+        #print("[CREPE.communication.stream_service.append_stream_segment_data] ", self.name,
+        #        self, " stream sum: ", tst, " stream dim: ", len(self.stream), len(self.stream[0])) 
 
     # Function to check attribute values and calculate the rigth end index
     # @param _row One of channels in self.stream
@@ -190,6 +204,10 @@ class StreamService(rpyc.Service):
         ]
 
         """
+        
+        
+        #print("[CREPE stream_service.get_stream_segment] ", self.name, self, " sum stream ", 
+        #        sum([sum(x) for x in self.stream]))
         
         # Generate a new array, where each row is a subset of the corresponding channel
         seg = [self.get_row_segment(x, _range, _startIndex)
@@ -250,37 +268,41 @@ class StreamService(rpyc.Service):
 
         return data
     
+    def on_connect(self, conn): 
+        print("[CREPE.communication.stream_service] on_connect", self.name, " ", self, " ", conn, " ", conn.root)
+
     # internal method - starts an rpyc RPC server on itself
     # @param name_of_service check start_service
-    def _start_rpc_thread(self, name_of_service):
-        print("[CREPE.communication.stream_service] Starting ", name_of_service, " rpc server")
-        self.thread = ThreadedServer(self, port=RPCPORTS[name_of_service], protocol_config=RPYC_CONFIG)
+    def _start_rpc_thread(self):
+        print("[CREPE.communication.stream_service] Starting ", self.name, " rpc server")
+        self.thread = ThreadedServer(self, port=self.port, protocol_config=RPYC_CONFIG)
         self.thread.start()
- 
 
-    def _start_loop(self, name_of_service, loop_function, loop_args):
-        self.thread_process = Process(target=self._start_rpc_thread, args=[name_of_service])
-        self.thread_process.start(target)
+    def start_loop(self, loop_function, loop_args=None):
+        self.thread_rpc = _thread.start_new_thread(self._start_rpc_thread, tuple())
         
-        print("[CREPE.communication.stream_service] Starting ", name_of_service, " loop")
-        loop_function(loop_args) 
-        print("[CREPE.communication.stream_service] After ", name_of_service, " loop")
-        
-        
+        print("[CREPE.communication.stream_service] Starting ", self.name, " loop")
+        if loop_args is not None:
+            loop_function(*loop_args) 
+        else:
+            loop_function()
+
+        print("[CREPE.communication.stream_service] After ", self.name, " loop")
+    
+
+    # Terminates the rpyc rpc server
+    def terminate_service(self):
+        self.thread_rpc.terminate()
+        self.loop_process.terminate()
 
     # Start to expose self and start a main loop function
     # @dev starts an rpyc RPC server on itself.
-    # @param name_of_service the name of this service with a corresponding RPCPORTS entry
-    def start_loop(self, name_of_service, loop_function, loop_args=[]):
-        print("[CREPE.communication.stream_service] Starting ", name_of_service, " loop and rpc server")
-        self.loop_process = Process(target=self._start_loop, args=[name_of_service, loop_function]+loop_args)
-        self.loop_process.start()
-    
-    # Terminates the rpyc rpc server
-    def terminate_service(self):
-        #self.loop_process.terminate()
-        pass
-        #self.thread_process.terminate()
+    # @param loop_function is the loop function to run
+    # @param loop_args is a list of optional loop_function arguments 
+    def init_and_run(_class, name, port):
+        obj = _class(name=name, port=port)
+        print("[CREPE.stream_service.init_and_run] class: ", obj, " , starting loop")
+        obj.start_loop(obj.loop)
 
     def testgetstream(self,_range, _startIndex, _callback):
         return self.exposed_get_stream_segment(_range, _startIndex, _callback)

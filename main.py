@@ -14,6 +14,10 @@ sys.path.insert(0, __currentdir[0:__currentdir.find("CREPE")+len("CREPE")])
 
 from enum import Enum
 from communication.hdf5_reader import HDF5Reader
+from communication.stream_service import StreamService
+from settings import CrepeSettings
+from utils import RpycHelper
+from multiprocessing import Process
 
 # Enum to represet which modus crepe can be in
 # LIVE - live connection with meame
@@ -22,7 +26,7 @@ class CrepeModus(Enum):
     LIVE = 0
     FILE = 1
 
-class CREPE():
+class CREPE(CrepeSettings, RpycHelper):
 
     # starts the required communication services and inits crepe
     # @param modus is a CrepeModus enum
@@ -32,21 +36,18 @@ class CREPE():
         self.stream_services = []
 
         if modus == CrepeModus.LIVE:
-            # TODO - since live is not yet implemented we generate a test stream
-            test = HDF5Reader("STREAM", path_to_file)
-            test.generate_random_test_stream()
-            #test.start_service("STREAM")
-            self.stream_services.append(test)
+            loop_process = Process(target=StreamService.init_and_run, args=[HDF5Reader, "STREAM", self.RPCPORTS["STREAM"]])
+            loop_process.start()
+            self.stream_services.append(loop_process)
 
         elif modus == CrepeModus.FILE:
             # initates a h5 reader and start the service
-            h5 = HDF5Reader("STREAM", path_to_file)
+            h5 = HDF5Reader("STREAM", self.RPCPORTS["STREAM"], path_to_file)
             h5.generate_H5_stream()
             h5._start_rpc_server("STREAM")
             self.stream_services.append(h5)
         else:
             raise ValueError("Wrong crepe modus supplied")
-
     # Function that runs the required shutdown commands before the project is closed 
     def shutdown(self):
         for x in self.stream_services:
