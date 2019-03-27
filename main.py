@@ -17,6 +17,7 @@ from communication.hdf5_reader import HDF5Reader
 from communication.stream_service import StreamService
 from settings import CrepeSettings
 from utils import RpycHelper
+from communication.meame_listener import MeameListener
 from multiprocessing import Process
 
 # Enum to represet which modus crepe can be in
@@ -39,6 +40,14 @@ class CREPE(CrepeSettings, RpycHelper):
             loop_process = Process(target=StreamService.init_and_run, args=[HDF5Reader, "STREAM", self.RPCPORTS["STREAM"]])
             loop_process.start()
             self.stream_services.append(loop_process)
+            # TODO - since live is not yet implemented we generate a test stream
+
+            #listener = MeameListener("10.20.92.130", 12340)
+            # test.generate_random_test_stream()
+
+            #listener.start_loop("STREAM", listener.listen, [])
+            # self.stream_services.append(test)
+
 
         elif modus == CrepeModus.FILE:
             # initates a h5 reader and start the service

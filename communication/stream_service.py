@@ -130,6 +130,7 @@ class StreamService(rpyc.Service):
     #   with a list of new values for each channel. To not append to a channel send None or an
     #   empty list for that particular channel.
     def append_stream_segment_data(self, _new_data):
+        print("Appending data to stream")
         # check that _new_data matches the stream
         if not (len(self.stream) == len(_new_data)):
             raise ValueError("New data was not of correct dimensions")
