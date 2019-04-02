@@ -10,18 +10,6 @@ import time
 from utils.growing_np_array import Array
 from enum import Enum
 
-"""
-class Stream(Array):
-    def __init__(self, rows): 
-        print("[CREPE.stream_service.StreamService.init] ", self.name, 
-                " created array of size (", rows,", 1000)")
-        Array.__init__(rows, 1000)
-
-    # TODO add check for equal seg dim
-    def append_segment(self, seg):
-        self.data.add(seg)
-"""
-
 class QueueService():
     def __init__(self, name, queue_out=None, queue_in=None):
         self.name = name
@@ -62,6 +50,25 @@ class QueueService():
                 data = np.concatenate((data, new_data), axis=1)
         return data
 
+# Starts a new process that creates object and runs the run/loop function
+# @param QueueServiceChildClass is a class that inherits from QueueService
+# @param **kwargs is the variables that QueueServiceChildClass is called with 
+#   As an example: start_and_run_queue_service(ProcessData, queue_in=previous_out_queue, queue_out=a_queue)
+#   kwargs is now {"queue_in": queueobject, "queue_out": anotherqueueobject}
+def start_and_run_queue_service(QueueServiceChildClass, **kwargs):
+    # creates object and calls run function 
+    def _init_and_run(QueueServiceChildClass, kwargs):
+        obj = QueueServiceChildClass(**kwargs)
+        obj.run() #blocking call
+    
+    if not "queue_out" in kwargs:
+        queue_out = Queue()
+        kwargs["queue_out"] = queue_out
+    process = Process(target=_init_and_run, args=(QueueServiceChildClass,kwargs,))
+    process.start()
+    return process, queue_out
+
+
 """ 
 
 Testing code: 
@@ -69,9 +76,9 @@ Testing code:
 """
 class GenerateData(QueueService):
     def __init__(self, queue_out):
-        QueueService.__init__(self, name="GENDATA", queue_out=queue_out, queue_in=None)
+        QueueService.__init__(self, name="GENDATA", queue_out=queue_out)
 
-    def loop(self):
+    def run(self):
         while True:
             rand_data = np.random.rand(60, 100)
             rand_data = rand_data * 200
@@ -89,7 +96,7 @@ class ProcessData(QueueService):
         data = self.get_x_elems(x_elems=self.mov_avg_size)
         self.stream.add(data)
 
-    def loop(self):
+    def run(self):
         i = 0
         while True:
             # get next segment if needed
@@ -108,17 +115,20 @@ class ProcessData(QueueService):
         subset = self.stream.data[:,start_index:start_index + self.mov_avg_size]
         avg = np.average(subset, axis=1)
         return avg
+
+"""
 def generate_data(queue_out):
     gen_data = GenerateData(queue_out)
-    gen_data.loop()
+    gen_data.run()
     print("after gen loop")
 
 def process_data(queue_out, queue_in):
     process_data = ProcessData(queue_out, queue_in)
-    process_data.loop()
+    process_data.run()
     print("after pro loop")
-
+"""
 def main():
+    """
     gen_data_queue = Queue()
     gen_data_process = Process(target=generate_data, args=(gen_data_queue,))
     gen_data_process.start()
@@ -126,7 +136,11 @@ def main():
     pro_data_queue = Queue()
     pro_data_process = Process(target=process_data, args=(pro_data_queue, gen_data_queue))
     pro_data_process.start()
-
+    """
+    
+    gendata_process, gendata_out = start_and_run_queue_service(GenerateData)
+    processdata_process, processdata_out = start_and_run_queue_service(ProcessData, queue_in=gendata_out)
+    
     while True:
         pass
         #data = pro_data_queue.get()
