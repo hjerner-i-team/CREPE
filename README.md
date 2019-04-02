@@ -69,36 +69,34 @@ class CREPE():
     
     # Function that runs the required shutdown commands before the project is closed 
     def shutdown(self):
+    
+# LIVE - live connection with meame
+# FILE - get data from an h5 file
+class CrepeModus(Enum):
+    LIVE = 0
+    FILE = 1
 ```
 ### \_\_init\_\_.py
-To make things easy we have also included an easy import of the CREPE class
+To make things easy we have also included an easy import of the CREPE class that you can use like this
 ```
-# import CREPE.main and start it 
-import main
-def CREPE( path_to_file = None ):
-    return main.CREPE(path_to_file)
-```
-You can use this in any file like this
-```
-from CREPE import CREPE
-crep = CREPE(path_to_file)
+from CREPE import CREPE, CrepeModus
+crep = CREPE(modus=CrepeModus.LIVE, file_path="../test_data/4.h5")
 ```
 
 ## Settings.py
 The settings file is located `software/src/settings.py`
-It currently holds two variables
 ```
-RPCPORTS
 STREAM_DIMENSION
 ```
 
-## StreamService
-StreamService is a class that exposes a stream (a two dimensional array) containing neuro data trough RPC.
+## QueueService
+QueueService is a class that helps with the communication between two processes with two queues. It is meant to be inherited by any class who wants to be run as a process in the CREPE pipeline.
 
 ### Theory
 
-StreamService employs a push-pull pattern. Data is "pushed" to StreamService, and anyone can "pull" the data trough RPC. If the data is not yet ready, an
-optional callback argument can be supplied. StreamService will then call that callback once data is available. 
+QueueService employs two FIFO queues: `queue_out` is the queue that should be pushed to and `queue_in` is the queue that you can get data from.
+
+We also implemented the same pattern with RPC, because of ease-of-use but it introduced too much performance overhead making the program too slow to be usefull. We therefor opted for a multiprocessing Queue based pattern. Queues are fast and efficient. The only downside is that there is a sligth performance loss because it has to pickle and unpickle numpy arrays.
 
 #### Problem
 
@@ -106,175 +104,84 @@ Since this project cannot live in a single process we have to spawn several proc
 
 #### Prestudy
 
-We looked at multiproccessing/threading and tcp as alternative ways for communication between processes.
+We looked at RPC, multiproccessing/threading and tcp as alternative ways for communication between processes.
 A Tcp connection would be more complex and time consuming to implement.
 Mulitprocessing was better than threading for our purpose. 
-Multiprocessing with shared memory or pipes would have been a good solution. But it would be a bit more complex, harder to implement and not as expandable as RPC.
-
-##### RPyC - Python RPC
-We chose to go for RPyC. A RPC module for python. https://rpyc.readthedocs.io/en/latest/ 
-It is very easy to use and provides us with all the functionality we need. It is also exelent for symetric computing, which makes this solution easier to use. 
-
-This documentation will only cover this project. Check out RPyC's documentation to learn how it works.
+Multiprocessing with shared memory or pipes is a good solution. Tough it would be a bit more complex, harder to implement and not as expandable as RPC.
+RPC would be a very good solution, since it was easy to setup and use. But since we require that our processes run a main loop it was too much overhead to both run the main loop and a rpc server on the same process.
 
 ### How to use:
 For an example, look at the SSP repo
 
-#### Expose self (push data)
-
-To expose data, inherit from StreamService
-```
-from stream_service import StreamService, DataModus
-
-class thisisclass(StreamService):
-```
-
-You have to init the StreamService with one of this moduses:
+#### QueueService class
+The queues are stored in `self.queue_out` and `self.queue_in` but you should never have to directly interact with them.
+They can be used by calling `self.put(data)` and `self.get()`. 
 
 ```
-class DataModus(Enum):     
-    DATA = 1               
-    RESULT = 2
-    TESTING = 3
-
-class thisisclass(StreamService):
-    def __init__(self):
-        StreamService.__init__(self, DataModus.DATA)
-```
-
-To add data to the stream use one of these two functions
-
-```
-# Appends new data to row
-# @param _row is one of the channels in self.stream
-# @param _new_data is either an array containing new data or a single value
-def append_stream_row_data(self, _row, _new_data):
-
-# Appends segment to stream
-# @param _new_data is either a 1D array with new values for each channel, or a 2d array
-#   with a list of new values for each channel. To not append to a channel send None or an
-#   empty list for that particular channel.
-def append_stream_segment_data(self, _new_data):
-```
-
-Add the name of the service with a random free port to `software/src/settings.py`
-`
-RPCPORTS = {
-    "STREAM": 18861,
-}
-`
-
-This piece of code will start the RPC server, in this project we place this code in the `start.py` file in each module that is exposed with StreamService.
-
-```
-from rpyc.utils.server import ThreadedServer
-from settings import RPCPORTS, RPYC_CONFIG
-
-...
-
-t = ThreadedServer= ThreadedServer(h5, port=RPCPORTS["HDF5Reader"], protocol_config=RPYC_CONFIG)
-t.start()
-```
-
-### Call data (pull data)
-
-StreamService exposes these two functions trough RPC. Please note that only functions that starts with the `exposed_` name is exposed trough RPC, and the
-`exposed_`name is omitted when calling those functions. 
-
-```
-# Get a subset of a channels data
-# @notice Exposed to RPC
-# @param _row One of channels in self.stream
-# @param _range The range we wish to read
-# @param _startIndex The starting index to begin reading from on the channel
-# @param _callback is the func to call when data is ready, if it is not ready now.  
-# @returns a segmented 1d array or False
-def exposed_get_row_segment(self, _row, _range, _startIndex, _callback=None):
-
-# Get a segment of the stream (all channels)
-# @notice Exposed to RPC 
-# @param _range The range we wish to read
-# @param _startIndex The starting index to begin reading from
-# @param _callback is the func to call when data is ready, if it is not ready now.  
-# @returns a segmented 2d array where each row has equal dimensions or False
-def exposed_get_stream_segment(self, _range, _startIndex, _callback=None):
-```
-
-To call these functions then use this piece of code in the "client"
-```
-import rpyc
-from settings import RPCPORTS, RPYC_CONFIG
-
-c = rpyc.connect("localhost", RPCPORTS["<WHATEVERSERVICEYOURCALLING>"], config=RPYC_CONFIG)     
-data = c.root.get_stream_segment(_range=10, _startIndex=0, _callback=callback_function)
-
-```
-
-#### Stream Iterator
-There is some helper classes that will help you iterate over the entire stream so you don't have to keep track of indexes and so on. 
-
-```
-# Iterates over a row in the stream.
-class StreamRowIterator():    
-    # @param _channel is the row id. 
-    # @param _range is the number of elements to return on each iteration
-    def __init__(self, _channel=0, _range = 100):
-        ...
-
-    # gets the next set of data from the stream
-    # @param _conn is the rpc connection object
-    def next(self, _conn): 
-        ...
+class QueueService():
+    # @param name is the name of the service/class, only used when printing 
+    # @param queue_out is the queue to (out)put data to
+    # @param queue_in is the queue to get data from
+    def __init__(self, name, queue_out=None, queue_in=None):
     
-    # gets the next set of data from the stream or waints for the the next set
-    # @param _conn is the rpc connection object
-    # @param sleep is the amount of seconds between calls
-    # @param timeout is the amount of x * sleep seconds with no data we can recive before returning False.
-    def next_or_wait(self, conn, sleep = 0.1, timeout = None):
-        ...
+    # puts an element onto the queue_out
+    # @param data is the data to put unto the queue
+    def put(self, data):
+    
+    # gets the next element in queudata to put unto the queue
+    # @returns whatever elem was in the queue. Most likley a 2d segment
+    def get(self):
 
+    # Get at least x number of columns from queue
+    # @param x_elems is the minimum number of columns to get
+    # @returns a single segment with shape (rows, x_elems or more) 
+    def get_x_elems(self, x_elems):
 
-# Iterates over segments in the stream
-class StreamSegmentIterator(): 
-    # @param _range is the number of elements to return on each iteration
-    def __init__(self, _range = 100):
-        ...
+    # get x numer of segments / items from queue. 
+    # @param x_seg is the number of times to call .get()
+    # @returns a single segment concatinaed from x_seg segments/items from queue
+    def get_x_seg(self, x_seg):
+```
+For a detailed example look at the SSP repo.
 
-    # gets the next set of data from the stream
-    # @param _conn is the rpc connection object
-    # @returns 2D stream segment with row length 1 < x < self.range or False
-    def next(self, _conn): 
-        ...
-        
-    # gets the next set of data from the stream or waints for the the next set
-    # @param _conn is the rpc connection object
-    # @param sleep is the amount of seconds between calls
-    # @param timeout is the amount of x * sleep seconds with no data we can recive before returning False.
-    def next_or_wait(self, conn, sleep = 0.1, timeout = None):
-        ...
+For a simple example take a look at the `communication/queue_service.py` file.
+
+An extremely simple example:
+```
+class GenerateData(QueueService):
+    def __init__(self, queue_out):
+        QueueService.__init__(self, name="GENDATA", queue_out=queue_out)
+
+    def run(self):
+        while True:
+            rand_data = np.random.rand(60, 100)
+            rand_data = rand_data * 200
+            self.put(rand_data)
+            time.sleep(0.01)
 ```
 
-Use these iterators like this
+#### StartQueueService - a helper class
+This class starts a new process that creates object and runs the run/loop function
 ```
-from stream_service import StreamSegmentIterator, StreamRowIterator
-
+class StartQueueService():
+    # Starts a new process that creates object and runs the run/loop function
+    # @param QueueServiceChildClass is a class that inherits from QueueService
+    # @param **kwargs is the variables that QueueServiceChildClass is called with 
+    #   As an example: start_and_run_queue_service(ProcessData, queue_in=previous_out_queue,
+    #   queue_out=a_queue)  kwargs is now {"queue_in": queueobject, "queue_out": anotherqueueobject}
+    # @returns process, queue_out 
+    def __init__(self, QueueServiceChildClass, **kwargs):
+    
+    # get the name of the process
+    def get_name(self):
+```
+How to Use:
+```
+class GenerateData(QueueService):
 ...
-rowIter = StreamRowIterator(_channel=0, _range=100)
-while True:
-    # c is the rpyc connection
-    data = rowIter.next_or_wait(c, timeout=1)
-    if data is False:
-        break
-
-    # do stuff with data 
+class ProcessData(QueueService):
+....
+processdata = StartQueueService(ProcessData, queue_in=gendata.queue_out)
+gendata = StartQueueService(GenerateData)
+processdata = StartQueueService(ProcessData, queue_in=gendata.queue_out)
 ```
-
-## utils.py
-This file will include nice-to-have functions
-
-```   
-   # Waints for and returns a rpyc connection  
-   # @param port is a port defined in RPCPORT  
-   # @returns an rpyc connection object        
-   def get_connection(port): 
-``` 
