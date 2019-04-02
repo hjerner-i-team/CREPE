@@ -1,3 +1,9 @@
+""" Import fix - check README for documentation """ 
+import os,sys,inspect 
+__currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+sys.path.insert(0, __currentdir[0:__currentdir.find("/CREPE")+len("/CREPE")])
+""" End import fix """
+
 import numpy as np
 
 # A dynamicly growing np array
@@ -12,21 +18,22 @@ class Array():
         self.size = 0
 
     # if the current array is full, then it creates a new one with 4 times the capacity and copies all the elements.
-    def grow(self):
-        print("growing", self.size, self.capacity)
-        if self.size == self.capacity:
+    def grow(self, new_data_size=0):
+        if self.size + new_data_size >= self.capacity:
+            new_data = np.zeros((self.rows, self.capacity * 3))
             self.capacity *= 4
-            print("new capacity: ", self.capacity) 
-            new_data = np.zeros((self.rows, self.capacity))
-            print("new array: ", new_data)
-            new_data[:,:self.size] = self.data
-            print("after copying")
-            self.data = new_data
+            print("[CREPE.utils.growing_np_array] growing, current size:\t", self.size, 
+                    "\tnew capacity:\t", self.capacity)
+   
+            #new_data[:,:self.size] = self.data
+            #np.copyto(new_data, self.data)
+            #multiple ways to create a new array with old data was researched and we found out that hstack works best
+            self.data = np.hstack((self.data, new_data))
 
     # add a 2d segment to the end of the array
     # @param seg is the 2d segment to add, it must have clean dimensions (all rows must have equal length)
     def add(self, seg):
-        self.grow()   
+        self.grow(new_data_size=len(seg[0]))   
         for i, row in enumerate(seg):
             for j, elem in enumerate(row):
                 self.data[i][self.size + j] = elem
