@@ -19,6 +19,7 @@ from communication.hdf5_reader import HDF5Reader, HDF5Mode
 from communication.queue_service import QueueService, StartQueueService
 #from communication.meame_listener import MeameListener
 from multiprocessing import Process, Queue
+import signal
 
 # Enum to represet which modus crepe can be in
 # LIVE - live connection with meame
@@ -32,7 +33,7 @@ class CREPE():
     # starts the required communication services and inits crepe
     # @param modus is a CrepeModus enum
     # @param data_file_path is the file path to an optional .h5 file
-    def __init__(self, modus=CrepeModus.LIVE, file_path = None ):
+    def __init__(self, modus=CrepeModus.LIVE, file_path = None, queue_services = None):
         self.modus = modus
         self.queue_services = []
 
@@ -53,6 +54,24 @@ class CREPE():
             raise ValueError("Wrong crepe modus supplied")
 
         self.queue_services.append(hdf5)
+ 
+        signal.signal(signal.SIGINT, self._shutdown)
+        
+        if queue_services is not None:
+            for i, service in enumerate(queue_services):
+                queue_in = self.queue_services[-1].queue_out
+                service[1]["queue_in"] = queue_in
+                qs = StartQueueService(service[0], **service[1])
+                self.queue_services.append(qs)
+            if len(self.queue_services) > 1:
+                print("[CREPE] started ", len(self.queue_services) - 1 ," extra services")
+
+        # connect meame speaker here
+    
+    def _shutdown(self, sig, frame):
+        print("[CREPE] signal: ", sig, " with frame: ", frame, " intercepted, shutting down")
+        self.shutdown()
+        sys.exit(0)
 
     # Function that runs the required shutdown commands before the project is closed 
     def shutdown(self):
