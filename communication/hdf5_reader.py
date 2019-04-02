@@ -4,7 +4,7 @@ __currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfr
 sys.path.insert(0, __currentdir[0:__currentdir.find("/CREPE")+len("/CREPE")])
 """ End import fix """
 
-from communication.queue_service import QueueService, start_and_run_queue_service 
+from communication.queue_service import QueueService, StartQueueService 
 from settings import DEFAULT_STREAM_DIMENSION
 import time
 import random
@@ -19,8 +19,8 @@ class HDF5Mode(Enum):
 # reads from a hdf5 file and puts it unto the queue, or generates a random test stream and outputs it to the queue
 class HDF5Reader(QueueService):
 
-    def __init__(self, queue_out=None, file_path=None, mode=HDF5Mode.TEST):
-        QueueService.__init__(self, "HDF5READER", queue_out=queue_out)
+    def __init__(self, queue_out=None, file_path=None, mode=HDF5Mode.H5):
+        QueueService.__init__(self, name="HDF5READER", queue_out=queue_out)
         self.file_path = file_path
         self.mode = mode
 
@@ -74,7 +74,7 @@ class HDF5Reader(QueueService):
 if __name__ == "__main__":
     #h = HDF5Reader()
     # h.generate_H5_stream()
-    hdf5_process, hdf5_out = start_and_run_queue_service(HDF5Reader, 
+    hdf5_process, hdf5_out = StartQueueService(HDF5Reader, 
             file_path="../test_data/4.h5", mode=HDF5Mode.TEST)
     i = 0
     while True:

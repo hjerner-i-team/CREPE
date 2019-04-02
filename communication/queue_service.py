@@ -4,7 +4,8 @@ __currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfr
 sys.path.insert(0, __currentdir[0:__currentdir.find("/CREPE")+len("/CREPE")])
 """ End import fix """
 
-from multiprocessing import Process, Queue
+from multiprocessing import Process, Queue, Array as mpArray
+from ctypes import c_char
 import numpy as np
 import time
 from utils.growing_np_array import Array
@@ -63,25 +64,37 @@ class QueueService():
                 data = np.concatenate((data, new_data), axis=1)
         return data
 
-# Starts a new process that creates object and runs the run/loop function
-# @param QueueServiceChildClass is a class that inherits from QueueService
-# @param **kwargs is the variables that QueueServiceChildClass is called with 
-#   As an example: start_and_run_queue_service(ProcessData, queue_in=previous_out_queue,
-#   queue_out=a_queue)  kwargs is now {"queue_in": queueobject, "queue_out": anotherqueueobject}
-# @returns process, queue_out 
-def start_and_run_queue_service(QueueServiceChildClass, **kwargs):
-    # creates object and calls run function 
-    def _init_and_run(QueueServiceChildClass, kwargs):
-        obj = QueueServiceChildClass(**kwargs)
-        obj.run() #blocking call
-    
-    if not "queue_out" in kwargs:
-        queue_out = Queue()
-        kwargs["queue_out"] = queue_out
-    process = Process(target=_init_and_run, args=(QueueServiceChildClass,kwargs,))
-    process.start()
-    return process, queue_out
+class StartQueueService():
+    # Starts a new process that creates object and runs the run/loop function
+    # @param QueueServiceChildClass is a class that inherits from QueueService
+    # @param **kwargs is the variables that QueueServiceChildClass is called with 
+    #   As an example: start_and_run_queue_service(ProcessData, queue_in=previous_out_queue,
+    #   queue_out=a_queue)  kwargs is now {"queue_in": queueobject, "queue_out": anotherqueueobject}
+    # @returns process, queue_out 
+    def __init__(self, QueueServiceChildClass, **kwargs):
+        
+        if not "queue_out" in kwargs:
+            queue_out = Queue()
+            kwargs["queue_out"] = queue_out
+        
+        # create a shared string to get name of object, not really necesarry tho
+        #self.name = Value(ctypes.c_char_p, "notaname")
+        self.name = mpArray('c', 20)
 
+        process = Process(target=self._init_and_run, 
+                args=(QueueServiceChildClass, self.name, kwargs,))
+        process.start()
+        self.process = process
+        self.queue_out = kwargs["queue_out"]
+
+    # creates object and calls run function 
+    def _init_and_run(self, QueueServiceChildClass, name, kwargs):
+        obj = QueueServiceChildClass(**kwargs)
+        name.value = bytes(obj.name, 'utf-8')
+        obj.run() #blocking call
+
+    def get_name(self):
+        return self.name.value.decode('utf-8')
 
 """ 
 
@@ -123,7 +136,7 @@ class ProcessData(QueueService):
             size_in_bytes = processed.nbytes
             del processed
             i += 1
-            print(self.name, " index ", i, " bytes: ", size_in_bytes )
+            #print(self.name, " index ", i, " bytes: ", size_in_bytes )
     
     def moving_average(self, start_index):
         subset = self.stream.data[:,start_index:start_index + self.mov_avg_size]
@@ -131,9 +144,12 @@ class ProcessData(QueueService):
         return avg
 
 def main():
+     
+    gendata = StartQueueService(GenerateData)
+    processdata = StartQueueService(ProcessData, queue_in=gendata.queue_out)
     
-    gendata_process, gendata_out = start_and_run_queue_service(GenerateData)
-    processdata_process, processdata_out = start_and_run_queue_service(ProcessData, queue_in=gendata_out)
+    time.sleep(0.5)
+    print("name of processs: ", gendata.get_name() , processdata.get_name())
     
     while True:
         pass
