@@ -72,6 +72,17 @@ class CREPE():
     def get_last_queue(self):
         return self.queue_services[-1].queue_out
 
+    def wait(self, data_func=None):
+        last_queue = self.get_last_queue()
+        dummy = QueueService(name="END", queue_in=last_queue)
+        while True:
+            data = dummy.get()
+            if data_func is not None:
+                data_func(data)
+            if data is False:
+                self.shutdown()
+                return
+
     def _shutdown(self):
         print("\n[CREPE._shutdown] sigint intercepted, shutting down")
         self.shutdown()
