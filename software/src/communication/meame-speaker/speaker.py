@@ -405,7 +405,7 @@ def dsp_func_call(func, arg_addrs=[], arg_vals=[]):
         7: START STIM QUEUE
         8: STOP STIM QUEUE
         9: SET ELECTRODE GROUP PERIOD
-        10: ENABLE STIME GROUP
+        10: ENABLE STIM GROUP
         11: DISABLE STIM GROUP
         12: COMMIT CONFIG DEBUG
         13: WRITE SQ DEBUG
