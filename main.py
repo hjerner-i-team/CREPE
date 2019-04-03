@@ -12,21 +12,15 @@ __currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfr
 sys.path.insert(0, __currentdir[0:__currentdir.find("CREPE")+len("CREPE")])
 """ End import fix """
 
-from enum import Enum
 import time 
 
-from communication.hdf5_reader import HDF5Reader, HDF5Mode
+from crepe_modus import CrepeModus
+from communication.hdf5_reader import HDF5Reader
 from communication.queue_service import QueueService, StartQueueService
 #from communication.meame_listener import MeameListener
 from multiprocessing import Process, Queue
 import signal
 
-# Enum to represet which modus crepe can be in
-# LIVE - live connection with meame
-# FILE - get data from an h5 file
-class CrepeModus(Enum):
-    LIVE = 0
-    FILE = 1
 
 class CREPE():
 
@@ -43,7 +37,7 @@ class CREPE():
         hdf5 = None
         if modus == CrepeModus.LIVE:
             # TODO - since live is not yet implemented we generate a test stream
-            hdf5 = StartQueueService(HDF5Reader, mode=HDF5Mode.TEST)
+            hdf5 = StartQueueService(HDF5Reader, mode=self.modus)
             
             #listener = MeameListener("10.20.92.130", 12340)
 
@@ -52,7 +46,7 @@ class CREPE():
 
         elif modus == CrepeModus.FILE:
             # initates a h5 reader and start the service
-            hdf5 = StartQueueService(HDF5Reader, file_path=file_path)
+            hdf5 = StartQueueService(HDF5Reader, file_path=file_path, mode=self.modus)
         else:
             raise ValueError("Wrong crepe modus supplied")
 
@@ -72,6 +66,9 @@ class CREPE():
         # connect meame speaker here
         signal.signal(signal.SIGINT, lambda signal, frame: self._shutdown())
     
+    def get_last_queue(self):
+        return self.queue_services[-1].queue_out
+
     def _shutdown(self):
         print("\n[CREPE._shutdown] sigint intercepted, shutting down")
         self.shutdown()
