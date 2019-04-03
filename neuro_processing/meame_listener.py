@@ -6,7 +6,7 @@ import os
 import json
 import time
 import requests
-from stream import Stream
+from neuro_processing.stream import Stream
 
 
 class MeameListener():
@@ -16,7 +16,7 @@ class MeameListener():
         print(r)
 
     def send_config(self):
-        conf = { 'samplerate' : self.bitrate , 'segmentLength' : self.segmentLength }
+        conf = { 'samplerate' : self.bitrate , 'segmentLength' : self.segment_len }
         r = requests.post(self.url+'/DAQ/connect', data=json.dumps(conf))
         print(r)
 
@@ -35,7 +35,7 @@ class MeameListener():
             data+=packet
         return data
 
-    def __init__(self, server_address, port, stream, segmentLength = 100, bitrate  = 10000):
+    def __init__(self, stream, server_address, port, bitrate  = 10000, segment_len = 100):
         # self.server_address = '10.20.92.130'
         # self.port = 12340
 
@@ -44,7 +44,7 @@ class MeameListener():
         self.url = 'http://' + server_address + ':8888'
 
         self.bitrate  = bitrate 
-        self.segmentLength = segmentLength
+        self.segment_len = segment_len
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.stream = stream
@@ -52,10 +52,11 @@ class MeameListener():
 
     #Connects to the Meame server and recieves outputstream of DAQ. If record data is true, data recieved is dumped to a HDF5 file
     def listen(self, record_data = False, file_path = ''):
-        chunk_dim = (60,self.segmentLength)
+        chunk_dim = (60,self.segment_len)
         chunk_len = chunk_dim[0] * chunk_dim[1] * 4
+        print("chunk len: {}".format(chunk_len))
 
-        if self.server_address != "127.0.0.1"
+        if self.server_address != "127.0.0.1":
             self.send_config()
             self.send_start()
             print("Config sent")

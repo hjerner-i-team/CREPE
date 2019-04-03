@@ -14,13 +14,28 @@ sys.path.insert(0, __currentdir[0:__currentdir.find("CREPE")+len("CREPE")])
 
 import time 
 
+<<<<<<< HEAD
+from communication.hdf5_reader import HDF5Reader, HDF5Mode
+from neuro_processing.neuro_processing import NeuroProcessor
+=======
 from crepe_modus import CrepeModus
 from communication.hdf5_reader import HDF5Reader
+>>>>>>> e4565bee306cb565657379f0a90d58c0eb67b3aa
 from communication.queue_service import QueueService, StartQueueService
 #from communication.meame_listener import MeameListener
 from multiprocessing import Process, Queue
 import signal
 
+<<<<<<< HEAD
+# Enum to represet which modus crepe can be in
+# LIVE - live connection with meame
+# FILE - get data from an h5 file
+class CrepeModus(Enum):
+    LIVE = 0
+    FILE = 1
+    OFFLINE = 2
+=======
+>>>>>>> e4565bee306cb565657379f0a90d58c0eb67b3aa
 
 class CREPE():
 
@@ -38,6 +53,7 @@ class CREPE():
         if modus == CrepeModus.LIVE:
             # TODO - since live is not yet implemented we generate a test stream
             hdf5 = StartQueueService(HDF5Reader, mode=self.modus)
+            self.queue_services.append(hdf5)
             
             #listener = MeameListener("10.20.92.130", 12340)
 
@@ -46,13 +62,15 @@ class CREPE():
 
         elif modus == CrepeModus.FILE:
             # initates a h5 reader and start the service
-            hdf5 = StartQueueService(HDF5Reader, file_path=file_path, mode=self.modus)
+            hdf5 = StartQueueService(HDF5Reader, file_path=file_path)
+            self.queue_services.append(hdf5)
+
+        elif modus == CrepeModus.OFFLINE:
+            neuro = StartQueueService(NeuroProcessor, meame_address = "127.0.0.1", meame_port = 40000, bitrate=1000)
+            self.queue_services.append(neuro)
         else:
             raise ValueError("Wrong crepe modus supplied")
 
-        self.queue_services.append(hdf5)
- 
-        
 
         if queue_services is not None:
             for i, service in enumerate(queue_services):
