@@ -76,6 +76,7 @@ class StartQueueService():
         if not "queue_out" in kwargs:
             queue_out = Queue()
             kwargs["queue_out"] = queue_out
+        print(kwargs)
         
         # create a shared string to get name of object, not really necesarry tho
         #self.name = Value(ctypes.c_char_p, "notaname")

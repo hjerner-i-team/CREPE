@@ -16,6 +16,7 @@ from enum import Enum
 import time 
 
 from communication.hdf5_reader import HDF5Reader, HDF5Mode
+from neuro_processing.neuro_processing import NeuroProcessor
 from communication.queue_service import QueueService, StartQueueService
 #from communication.meame_listener import MeameListener
 from multiprocessing import Process, Queue
@@ -27,6 +28,7 @@ import signal
 class CrepeModus(Enum):
     LIVE = 0
     FILE = 1
+    OFFLINE = 2
 
 class CREPE():
 
@@ -50,10 +52,14 @@ class CREPE():
         elif modus == CrepeModus.FILE:
             # initates a h5 reader and start the service
             hdf5 = StartQueueService(HDF5Reader, file_path=file_path)
+
+        elif modus == CrepeModus.OFFLINE:
+            neuro = StartQueueService(NeuroProcessor, meame_address = "127.0.0.1", meame_port = 40000, bitrate=1000)
         else:
             raise ValueError("Wrong crepe modus supplied")
 
-        self.queue_services.append(hdf5)
+#        self.queue_services.append(hdf5)
+        self.queue_services.append(neuro)
  
         signal.signal(signal.SIGINT, self._shutdown)
         
