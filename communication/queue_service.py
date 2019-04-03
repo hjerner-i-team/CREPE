@@ -15,6 +15,18 @@ class PoisonPill():
     def __init__(self):
         self.value = "POISON4269"
 
+def is_poison_pill(data):
+    if isinstance(data, PoisonPill):
+        return True
+    # in some instances isinstance will not return true, check therefor value
+    try:
+        if data.value == "POISON4269":
+            return True
+    except:
+        pass
+    return False
+
+
 # Inherit from this class to gain access to queues 
 class QueueService():
     # @param name is the name of the service/class, only used when printing 
@@ -41,18 +53,11 @@ class QueueService():
     # @returns whatever elem was in the queue. Most likley a 2d segment
     def get(self):
         data = self.queue_in.get()
-        #print(data)
-        if isinstance(data, PoisonPill):
-            # print("\n[QueueService.get] ", self.name, " recived PoisonPill, returning False")
+        # print("\n[QueueService.get] ", self.name, " recived PoisonPill, returning False")
+        if is_poison_pill(data):
             return False
-        # in some instances isinstance will not return true, check therefor value
-        try:
-            if data.value == "POISON4269":
-                # print("\n[QueueService.get] ", self.name, " recived PoisonPill, returning False")
-                return False
-        except:
-            pass
-        return data
+        else:
+            return data
 
     # Get at least x number of columns from queue
     # @param x_elems is the minimum number of columns to get
