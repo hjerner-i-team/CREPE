@@ -26,19 +26,21 @@ class HDF5Reader(QueueService):
 
     # Generates a 2d numpy array from a .h5 file to self.stream
     def generate_H5_stream(self): 
-        print("[CREPE.commnication.hdf5_reader] Generating stream from h5 file: ", self.file_path)
+        print("\n[CREPE.commnication.hdf5_reader.generate_H5_stream] \n\tusing .h5 file: ",
+                self.file_path)
         # open the file with h5py
         f = h5py.File(self.file_path, 'r') 
         # navigate to where the raw data is in the .h5 file
         # Use the program hdfviewer or check our upcomming documentation for full .h5 format
         data = f['Data']['Recording_0']['AnalogStream']['Stream_0']['ChannelData']
-        # this will return a h5py object so we convert it to a list
-        print("[CREPE.communication.hdf5_reader] len of a row: ", len(data[0]))
+        #put the data unto the queue 
         for i in range(100, len(data[0]) + 1, 100):
             self.put(data[:, i - 100:i])
+        # if the data is not dividable by 100, add the remaning
         remaining = data[:, len(data) - i % 100:len(data)]
         self.put(remaining)
-        print("[CREPE.communication.hdf5_reader] data pushed to stream")
+        print("\n[CREPE.communication.hdf5_reader.generate_H5_stream] ", 
+                "all hdf5 data pushed to stream")
 
     # Generates a 2d matrice with random numbers to self.stream for testing purposes
     def _generate_random_test_segment(self, _range):

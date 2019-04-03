@@ -20,10 +20,10 @@ class QueueService():
         self.name = name
         self.queue_out = queue_out
         self.queue_in = queue_in
-        print("[CREPE.stream_service.QueueService] object with name:\t", name, 
-                "\tqueue_out:\t", queue_out, "\tqueue_in:\t", queue_in)
+        print("\n[CREPE.stream_service.QueueService.init] ", 
+                "created QueueService object with \n\tname:\t", name, 
+                "\n\tqueue_out:\t", queue_out, "\n\tqueue_in:\t", queue_in)
         
-
     # puts an element onto the queue_out
     # @param data is the data to put unto the queue
     def put(self, data):
