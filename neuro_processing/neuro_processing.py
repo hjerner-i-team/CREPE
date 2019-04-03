@@ -44,4 +44,5 @@ class NeuroProcessor(QueueService):
             else:
                 time.sleep(0.05)
         print("Neuro processor finished")
+        self.end()
     

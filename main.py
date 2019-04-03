@@ -14,28 +14,13 @@ sys.path.insert(0, __currentdir[0:__currentdir.find("CREPE")+len("CREPE")])
 
 import time 
 
-<<<<<<< HEAD
-from communication.hdf5_reader import HDF5Reader, HDF5Mode
-from neuro_processing.neuro_processing import NeuroProcessor
-=======
-from crepe_modus import CrepeModus
 from communication.hdf5_reader import HDF5Reader
->>>>>>> e4565bee306cb565657379f0a90d58c0eb67b3aa
+from neuro_processing.neuro_processing import NeuroProcessor
 from communication.queue_service import QueueService, StartQueueService
 #from communication.meame_listener import MeameListener
 from multiprocessing import Process, Queue
+from crepe_modus import CrepeModus
 import signal
-
-<<<<<<< HEAD
-# Enum to represet which modus crepe can be in
-# LIVE - live connection with meame
-# FILE - get data from an h5 file
-class CrepeModus(Enum):
-    LIVE = 0
-    FILE = 1
-    OFFLINE = 2
-=======
->>>>>>> e4565bee306cb565657379f0a90d58c0eb67b3aa
 
 class CREPE():
 

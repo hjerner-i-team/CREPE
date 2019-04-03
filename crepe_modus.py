@@ -6,3 +6,4 @@ from enum import Enum
 class CrepeModus(Enum):
     LIVE = 0
     FILE = 1
+    OFFLINE = 2
