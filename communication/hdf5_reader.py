@@ -11,34 +11,38 @@ import random
 
 import h5py
 import numpy as np
-from enum import Enum
-class HDF5Mode(Enum):
-    H5 = 0
-    TEST = 1
+
+from crepe_modus import CrepeModus
+
 
 # reads from a hdf5 file and puts it unto the queue, or generates a random test stream and outputs it to the queue
 class HDF5Reader(QueueService):
-
-    def __init__(self, queue_out=None, file_path=None, mode=HDF5Mode.H5):
+    from main import CrepeModus
+    def __init__(self, queue_out=None, file_path=None, mode=CrepeModus.FILE):
         QueueService.__init__(self, name="HDF5READER", queue_out=queue_out)
         self.file_path = file_path
         self.mode = mode
 
     # Generates a 2d numpy array from a .h5 file to self.stream
     def generate_H5_stream(self): 
-        print("[CREPE.commnication.hdf5_reader] Generating stream from h5 file: ", self.file_path)
+        print("\n[CREPE.commnication.hdf5_reader.generate_H5_stream] \n\tusing .h5 file: ",
+                self.file_path)
         # open the file with h5py
         f = h5py.File(self.file_path, 'r') 
         # navigate to where the raw data is in the .h5 file
         # Use the program hdfviewer or check our upcomming documentation for full .h5 format
         data = f['Data']['Recording_0']['AnalogStream']['Stream_0']['ChannelData']
-        # this will return a h5py object so we convert it to a list
-        print("[CREPE.communication.hdf5_reader] len of a row: ", len(data[0]))
+        #put the data unto the queue 
         for i in range(100, len(data[0]) + 1, 100):
             self.put(data[:, i - 100:i])
+        # if the data is not dividable by 100, add the remaning
         remaining = data[:, len(data) - i % 100:len(data)]
         self.put(remaining)
-        print("[CREPE.communication.hdf5_reader] data pushed to stream")
+        print("\n[CREPE.communication.hdf5_reader.generate_H5_stream] ", 
+                "all hdf5 data pushed to stream")
+        # after all data is sent, send poison pill 
+        self.end()
+        f.close()
 
     # Generates a 2d matrice with random numbers to self.stream for testing purposes
     def _generate_random_test_segment(self, _range):
@@ -58,26 +62,35 @@ class HDF5Reader(QueueService):
         return rand_data
 
     def run(self):
-        if self.mode == HDF5Mode.H5:
+        if self.mode == CrepeModus.FILE:
             self.generate_H5_stream()
-        elif self.mode == HDF5Mode.TEST:
+        elif self.mode == CrepeModus.LIVE:
             i = 0
             while True:
                 seg = self._generate_random_test_segment_list(100)
                 self.put(seg)
-                i += len(seg[0])
-                print(i)
-                # sleep for 0.5 seconds
+                i += 1
                 time.sleep(0.005)
-            
+                if i == 600:
+                    print("\n[CREPE.hdf5_reader.run (LIVE)] finished generated ", 
+                            i * 100, " row elements")
+                    self.end()
+                    return
+
 
 if __name__ == "__main__":
     #h = HDF5Reader()
     # h.generate_H5_stream()
-    hdf5_process, hdf5_out = StartQueueService(HDF5Reader, 
-            file_path="../test_data/4.h5", mode=HDF5Mode.TEST)
+    file_path = sys.path[0] + "/../test_data/4.h5"
+    hdf5 = StartQueueService(HDF5Reader, file_path=file_path, mode=CrepeModus.FILE)
+    dummy = QueueService(name="END", queue_in=hdf5.queue_out)
     i = 0
     while True:
-        i += len(hdf5_out.get()[0])
-        print(i)
+        d = dummy.get()
+        if d is False:
+            hdf5.process.terminate()
+            print("\n[HDF5 main] recived ", i, " elements per row")
+            print("\n[HDF5 main] terminated processes")
+            exit()
+        i += len(d[0])
 

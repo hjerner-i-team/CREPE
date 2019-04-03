@@ -11,6 +11,10 @@ import time
 from utils.growing_np_array import Array
 from enum import Enum
 
+class PoisonPill():
+    def __init__(self):
+        self.value = "POISON4269"
+
 # Inherit from this class to gain access to queues 
 class QueueService():
     # @param name is the name of the service/class, only used when printing 
@@ -20,19 +24,35 @@ class QueueService():
         self.name = name
         self.queue_out = queue_out
         self.queue_in = queue_in
-        print("[CREPE.stream_service.QueueService] object with name:\t", name, 
-                "\tqueue_out:\t", queue_out, "\tqueue_in:\t", queue_in)
-        
-
+        print("\n[CREPE.stream_service.QueueService.init] ", 
+                "created QueueService object with \n\tname:\t", name, 
+                "\n\tqueue_out:\t", queue_out, "\n\tqueue_in:\t", queue_in)
+    
     # puts an element onto the queue_out
     # @param data is the data to put unto the queue
     def put(self, data):
         self.queue_out.put(data)
 
+    def end(self):
+        # print("\n[QueueService.end] ", self.name, " putting PoisonPill on queue")
+        self.queue_out.put(PoisonPill())
+
     # gets the next element in queudata to put unto the queue
     # @returns whatever elem was in the queue. Most likley a 2d segment
     def get(self):
-        return self.queue_in.get()
+        data = self.queue_in.get()
+        #print(data)
+        if isinstance(data, PoisonPill):
+            # print("\n[QueueService.get] ", self.name, " recived PoisonPill, returning False")
+            return False
+        # in some instances isinstance will not return true, check therefor value
+        try:
+            if data.value == "POISON4269":
+                # print("\n[QueueService.get] ", self.name, " recived PoisonPill, returning False")
+                return False
+        except:
+            pass
+        return data
 
     # Get at least x number of columns from queue
     # @param x_elems is the minimum number of columns to get
@@ -107,11 +127,17 @@ class GenerateData(QueueService):
         QueueService.__init__(self, name="GENDATA", queue_out=queue_out)
 
     def run(self):
+        i = 0
         while True:
             rand_data = np.random.rand(60, 100)
             rand_data = rand_data * 200
             self.put(rand_data)
             time.sleep(0.01)
+            i += 1
+            if i == 200:
+                print("[GenerateData.run] ending")
+                self.end()
+                return 
 
 class ProcessData(QueueService):
     def __init__(self, queue_out, queue_in):
@@ -131,6 +157,10 @@ class ProcessData(QueueService):
             #print(self.name, " capacity of stream: ", self.stream.capacity, " len: ", len(self.stream))
             if (i + self.mov_avg_size >= len(self.stream)):
                 data = self.get()
+                if data is False:
+                    print("\n[ProcessData.run] recived poison pill, ending")
+                    self.end()
+                    return
                 self.stream.add(data)
             processed = self.moving_average(i) 
             self.put(processed)
@@ -149,11 +179,18 @@ def main():
     gendata = StartQueueService(GenerateData)
     processdata = StartQueueService(ProcessData, queue_in=gendata.queue_out)
     
-    time.sleep(0.5)
-    print("name of processs: ", gendata.get_name() , processdata.get_name())
+    #time.sleep(1)
+    #print("name of processs: ", gendata.get_name() , processdata.get_name())
     
+    # create a dummy QueueService
+    dummy = QueueService(name="END", queue_in = processdata.queue_out)
     while True:
-        pass
+        d = dummy.get()
+        if d is False:
+            gendata.process.terminate()
+            processdata.process.terminate()
+            print("\n[main] ended processes, goodbye!")
+            return
 
 if __name__ == "__main__":
     main()

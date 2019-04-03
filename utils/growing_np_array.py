@@ -22,7 +22,7 @@ class Array():
         if self.size + new_data_size >= self.capacity:
             new_data = np.zeros((self.rows, self.capacity * 3))
             self.capacity *= 4
-            print("[CREPE.utils.growing_np_array] growing, current size:\t", self.size, 
+            print("\n[CREPE.utils.growing_np_array] growing, current size:\t", self.size, 
                     "\tnew capacity:\t", self.capacity)
    
             #new_data[:,:self.size] = self.data
