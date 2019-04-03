@@ -34,7 +34,6 @@ class CREPE():
         print("\n[CREPE.init] init crepe with args:\n\tmodus_\t",modus,"\n\tfile_path:\t", 
                 file_path,"\n\tqueue_services:\t",queue_services)
 
-        hdf5 = None
         if modus == CrepeModus.LIVE:
             # TODO - since live is not yet implemented we generate a test stream
             hdf5 = StartQueueService(HDF5Reader, mode=self.modus)
@@ -69,6 +68,9 @@ class CREPE():
         # connect meame speaker here
         signal.signal(signal.SIGINT, lambda signal, frame: self._shutdown())
     
+    def get_first_queue(self):
+        return self.queue_services[0].queue_out
+
     def get_last_queue(self):
         return self.queue_services[-1].queue_out
 
@@ -77,11 +79,11 @@ class CREPE():
         dummy = QueueService(name="END", queue_in=last_queue)
         while True:
             data = dummy.get()
-            if data_func is not None:
-                data_func(data)
             if data is False:
                 self.shutdown()
                 return
+            if data_func is not None:
+                data_func(data)
 
     def _shutdown(self):
         print("\n[CREPE._shutdown] sigint intercepted, shutting down")
