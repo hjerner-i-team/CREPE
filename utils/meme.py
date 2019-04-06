@@ -22,7 +22,7 @@ conn, addr = s.accept()
 #    if(n%10==0):
 #        print("Sent {} segments".format(n))
 
-with h5py.File("recordings/recording5.hdf5", "r") as f:
+with h5py.File("../recordings/recording5.hdf5", "r") as f:
 #    dset = f['Data']['Recording_0']['AnalogStream']['Stream_0']['ChannelData']
     dset = f["data"]
 #    n_chunks = (int)dset.shape[1]/100
