@@ -19,7 +19,6 @@ class NeuroProcessor(QueueService):
 
         #Initialize streams
         self.meamestream = Stream(60, 10000)
-        self.avgstream = Stream(60, 10000)
         self.fftstream = Stream(60, 100)
 
         #Initialize meame listener. Needs an output stream
@@ -28,8 +27,6 @@ class NeuroProcessor(QueueService):
     def run(self):
         print("Starting meame listener")
         _thread.start_new_thread(self.meamelistener.listen,())
-#        print("Starting moving avg")
-#        _thread.start_new_thread(moving_avg, (100, self.meamestream, self.avgstream,))
         print("Starting FFT")
         _thread.start_new_thread(fft_max, (1000,1,1000, self.meamestream,self.fftstream,))
         
@@ -38,8 +35,6 @@ class NeuroProcessor(QueueService):
         while(i < self.fftstream.final_index):
             if(i <= self.fftstream.size):
                 self.put(self.fftstream.data[:,i-1:i].reshape(60))
-#                print("Neuro putting to outputstream:")
-#                print(self.fftstream.data[:,i-1:i].reshape(60))
                 i += 1
             else:
                 time.sleep(0.05)
