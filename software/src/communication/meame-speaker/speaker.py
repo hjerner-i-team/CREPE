@@ -50,29 +50,35 @@ def template_setup():
     Perform a setup procedure for the MEAME server. This is one of many possible
     configurations. 
     In this one in particular, we will set up: 
+        - Three electrode groups 
+        - Square stimuli waves for those groups
+        - Apply a stimuli frequeny to one of those groups
 
     This is a replica of the procedure found in the MEAME-DSP repository, and
     at the time of writing also callable at /DSP/stim/setup/.
     '''
 
-    # TODO: Decode mystery
-    commands = [  # A list of commands to run 
-        dsp_write_sq_dbg(),  # Write SQ debug
+    # A list of commands to run
+    # TODO: More trimming
+    commands = [
         dsp_set_elec_grp_auto(),  # Set electrode group auto
         dsp_stop_stim_queue(),  # Stop stim queue
         dsp_reset(),
         reg_write_req([WRT_PTR_STIM_1], [0]),
         dsp_stop_stim_queue(),  # Stop stim queue
+        # Apply square wave
         reg_write_req([STG_MWRITE1, STG_MWRITE1], [32593, 1671343]),
         reg_write_req([WRT_PTR_STIM_2], [0]),
         reg_write_req([STG_MWRITE2, STG_MWRITE2], [32211289, 655385]),
         reg_write_req([WRT_PTR_STIM_3], [0]),
         dsp_stop_stim_queue(),  # Stop stim queue
+        # Apply square wave
         reg_write_req([STG_MWRITE3, STG_MWRITE3], [32593, 1671343]),
         reg_write_req([WRT_PTR_STIM_4], [0]),
         reg_write_req([STG_MWRITE4, STG_MWRITE4], [3211289, 655385]),
         reg_write_req([WRT_PTR_STIM_5], [0]), 
         dsp_stop_stim_queue(),  # Stop stim queue
+        # Apply square wave
         reg_write_req([STG_MWRITE5, STG_MWRITE5], [32593, 1671343]), 
         reg_write_req([WRT_PTR_STIM_6], [0]),
         reg_write_req([STG_MWRITE6, STG_MWRITE6], [3211289, 655385]),  
@@ -101,7 +107,7 @@ def template_setup():
         ),
         dsp_commit_conf(),  # Commit config
         dsp_start_stim_queue(),  # Start stim queue
-        # Set electrode group period
+        # Apply a period of 0.1 s to electrode group 1. == 10Hz
         dsp_set_elec_grp_period( 
             [STIM_QUEUE_GROUP, STIM_QUEUE_PERIOD], 
             [0, 5000]
@@ -217,14 +223,10 @@ def set_stim(group_num, period):
     :param int group_num: Predefined number of target group
     :param int period: Period to apply, as a multiple of 20 micro seconds
     '''
-    # 9: SET ELECTRODE GROUP PERIOD
-    # 10: ENABLE STIME GROUP
-    
     commands = [
         dsp_set_elec_grp_period( 
             [STIM_QUEUE_GROUP, STIM_QUEUE_PERIOD], 
-            # TODO: PERIOD
-            [0, 5000]
+            [0, period]
         ), 
         dsp_enable_stim_grp(group_num)
     ]
@@ -343,7 +345,8 @@ def dsp_commit_conf_dbg():
 
 def dsp_write_sq_dbg():
     '''
-    TODO
+    Deprecated!
+    Was used during DSP debugging, but serves not purpose at this time.
     Returns a serialized json object string
     '''
     return dsp_func_call(13)
@@ -471,6 +474,7 @@ def debug_msg(msg):
 
 def main():
     template_complete()
+    template_stim()
 
 
 if __name__ == '__main__':
