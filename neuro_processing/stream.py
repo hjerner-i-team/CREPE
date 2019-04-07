@@ -1,6 +1,7 @@
 import numpy as np
 import sys
 
+#Growing numpy array for storing
 class Stream():
     def __init__(self,n_rows,n_cols):
         self.n_cols = n_cols

@@ -37,13 +37,12 @@ class CREPE():
         hdf5 = None
         if modus == CrepeModus.LIVE:
             # TODO - since live is not yet implemented we generate a test stream
-            hdf5 = StartQueueService(HDF5Reader, mode=self.modus)
-            self.queue_services.append(hdf5)
+#            hdf5 = StartQueueService(HDF5Reader, mode=self.modus)
+#            self.queue_services.append(hdf5)
             
-            #listener = MeameListener("10.20.92.130", 12340)
+            neuro = StartQueueService(NeuroProcessor)
+            self.queue_services.append(neuro)
 
-            #listener.start_loop("STREAM", listener.listen, [])
-            # self.stream_services.append(test)
 
         elif modus == CrepeModus.FILE:
             # initates a h5 reader and start the service

@@ -1,3 +1,7 @@
+import os,sys,inspect 
+__currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+sys.path.insert(0, __currentdir[0:__currentdir.find("/CREPE")+len("/CREPE")])
+""" End import fix """
 import socket
 import struct
 import numpy as np
@@ -30,7 +34,8 @@ class MeameListener():
         while(len(data)<chunklen):
             packet = sock.recv(chunklen - len(data))
             if not packet:
-                print("Incomplete chunk recieved")
+                if(len(data) > 0):
+                    print("Incomplete segment recieved")
                 return None
             data+=packet
         return data
@@ -54,7 +59,7 @@ class MeameListener():
     def listen(self, record_data = False, file_path = ''):
         chunk_dim = (60,self.segment_len)
         chunk_len = chunk_dim[0] * chunk_dim[1] * 4
-        print("chunk len: {}".format(chunk_len))
+        print("segment len: {}".format(chunk_len))
 
         if self.server_address != "127.0.0.1":
             self.send_config()
