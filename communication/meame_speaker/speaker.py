@@ -1,6 +1,6 @@
 import json
 import requests
-from config_decimal import *
+from CREPE.communication.meame_speaker.config_decimal import *
 
 # Methods for sending data to the MEAME server. 
 # Used for config and preprocessed data transmission
