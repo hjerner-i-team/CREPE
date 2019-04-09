@@ -83,16 +83,24 @@ TimeoutSec=infinity
 WantedBy=graphical.target
 ```
 
-Now we need to register the service and enable it with systemctl such that it will run upon next boot.
+Now we need to register the service and enable it with systemctl such that it will run upon next boot. **NOTE THAT ONLY ONE INSTANCE OF MAIN.PY CAN BE RUN AT ANY GIVEN TIME - ATTEMPTING TO MANUALLY RUN MAIN.PY WHILE THE SERVICE IS RUNNING WILL RESULT IN FAILURE**
 ```
 sudo chmod 644 /lib/systemd/system/CREPE.service
 sudo systemctl daemon-reload
 sudo systemctl enable CREPE.service
+sudo reboot
 ```
 
-Upon reboot, check that the service is running:
+Upon reboot, check that the service is running.
 ```
 sudo systemctl status CREPE.service
+```
+**NOTE:** To enable manual execution of main.py for debugging and/or changes to the code, you first need to disable the service and reboot. Also check status to verify that the service was stopped.
+```
+sudo systemctl stop CREPE.service
+sudo systemctl disable CREPE.service
+sudo systemctl status CREPE.service
+sudo reboot
 ```
 
 OPTIONAL: Instally numpy, scipy and matplotlib if you want to use main_with_visualization.py, which will display a human-interpretable, interpolated image of the IR data collected by the sensor.
