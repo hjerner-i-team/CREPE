@@ -25,9 +25,45 @@ The demo setup will capture the IR profile of a rock/paper/scissor and trasnmitt
   - [Datasheet](https://cdn-learn.adafruit.com/downloads/pdf/adafruit-1-44-color-tft-with-micro-sd-socket.pdf?timestamp=1552457427)
 
 **Overview of complete setup:**
-The harware is mounted inside a 3D printed container, powered by a power bank also mounted inside. A 1.44" TFT LCD dislay is mounted on he exterior of the container. The AMG8833 IR-sensor is mounted in the interior of the box, capturing data through a slot in the box. An adjustable plate is attached to the bottom of the container. This plate is equipped with a button, registering the hand of the subject. This button is connected to the Arduino.
+The electronics are housed inside a 3D printed container, which was designed to house an Arduino Uno. The container side walls have slits for which to mount the AMG8833 and LCD display. **INSERT OVERVIEW IMAGE** The bottom of the contasiner has an adjustable plate that slides though a slit, allowing us to adjust the distance from the button (and thus the user's hand) to the AMG8833 IR sensor. This is motivated by the lack of documentation of the sensor's focal length, which prevents us from calculating the optimal distance to the button. The optimal distance was found by visualizing the temperature data collected from the sensor and subsequently adjusting the sliding plate. **INSERT FOCUS IMAGE OF SLIDING PLATE** A generic pushbutton is attached to this plate, which will act as a hardware interrupt on the Raspberry Pi's GPIO pins to indicate when the user has their hand in front of the sensor and chosen a gesture to play. **INSERT FOCUS IMAGE OF THE BUTTON (WITH SENSOR IN VIEW, BACKGROUND)** The Raspberry Pi will then poll the AMG8833 IR sensor and send the returned temperature data to the CREPE HTTP REST API in json format. This API will be polled until an answer is ready, which in turn will determine which response is displayed to the user via custom gesture graphics the LCD display.
+**INSERT PHOTOS/FIGURES OF THE CONTAINER HERE**
 
 **Raspberry Pi: setup**
+This section will describe in detail how the Raspberry Pi is configured, and should suffice to be able to replicate this example. Pinouts are described with both physical and BCM pin configurations. Use the following command in bash to display the Raspberry Pi pinout:
+```
+pinout
+```
+
+The Raspberry Pi is headless, and interfaces the following:
+- Onboard WiFi Module provides interface with HTTP REST API of the CREPE server. Additionally enables remote control via SSH and/or VNC.
+- Adafruit AMG8833 IR Sensor via I2C.  
+
+| AMG8833 |    Raspberry Pi 3B+ |
+|---------|--------------------:|
+| Vin     |        Pin 1 (3.3V) |
+| GND     |         Pin 9 (GND) |
+| SDA     | Pin 3 (BCM 2) (SDA) |
+| SCL     | Pin 5 (BCM 3) (SCL) |
+
+- Adafruit 1.44" TFT LCD Display (ST7735R driver)
+
+| ST7735R | Raspberry Pi 3B+ |
+|---------|-----------------:|
+| Vin     |    Pin 17 (3.3V) |
+| GND     |     Pin 20 (GND) |
+| SCK     |  Pin 23 (BCM 11) |
+| SI      |  Pin 19 (BCM 10) |
+| TCS     |   Pin 24 (BCM 8) |
+| RST     |  Pin 22 (BCM 25) |
+| D/C     |  Pin 18 (BCM 24) |
+
+- Pushbutton (generic)
+
+| Pushbutton | Raspberry Pi 3B+ |
+|------------|-----------------:|
+| Any        |  Pin 12 (BCM 18) |
+| Any        |     Pin 14 (GND) |
+
 The Arduino Uno is through a PCB shield equipped with the IR-sensor, wifi module and the LCD Display. It captures the IR profile of a rock/paper/scissor and transmits this to CREPE in json format. Results recieved from CREPE are displayed on the display. Capturing of data is triggered by the button mounted on the adjustable plate. 
 
 ### Requisites 
