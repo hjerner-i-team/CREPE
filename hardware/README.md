@@ -1,4 +1,4 @@
-# Rock, Paper, Scissors demonstration
+# !!! MOVE TO SSP REPO - Rock, Paper, Scissors demonstration - MOVE TO SSP REPO !!!
 A demonstration of the CREPE communication framwork utilizing hardware, sensor data and network communications. 
 
 
