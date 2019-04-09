@@ -8,3 +8,4 @@ class CrepeModus(Enum):
     FILE = 1
     OFFLINE = 2
     TEST = 3
+    LIVE_RECORD = 4

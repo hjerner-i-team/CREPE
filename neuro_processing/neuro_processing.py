@@ -26,7 +26,7 @@ class NeuroProcessor(QueueService):
         
     def run(self):
         print("Starting meame listener")
-        _thread.start_new_thread(self.meamelistener.listen,())
+ neuro       _thread.start_new_thread(self.meamelistener.listen,())
         print("Starting FFT")
         _thread.start_new_thread(fft_max, (1000,1,1000, self.meamestream,self.fftstream,))
         

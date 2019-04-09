@@ -111,13 +111,18 @@ def template_setup():
         dsp_set_elec_grp_period( 
             [STIM_QUEUE_GROUP, STIM_QUEUE_PERIOD], 
             [0, 5000]
-        ) 
+        ),
     ]  
     
     # Send commands in order to execute them
     for command in commands:
         auto_transmit(command)
-        
+
+    # Reset DAQ for good measure. TODO: needed?
+    daq_config(1000, 100),
+    meame_transmit('DAQ-start')
+
+
 def template_stim():
     '''
     Apply stimulation, just like the the remote equivalent does.
@@ -160,7 +165,8 @@ def auto_transmit(json_msg):
     if 'func' in json_obj:
         request = meame_transmit('DSP-call', json_msg)
     elif 'samplerate' in json_obj:
-        request = meame_transmit('DSP-write', json_msg)
+        request = meame_transmit('DAQ-connect', json_msg)
+        print("Sent to DAQ: " + json.dumps(json_obj))
     elif 'electrodes' in json_obj:
         request = meame_transmit('DSP-write', json_msg)
     elif 'values' in json_obj:
@@ -228,7 +234,7 @@ def set_stim(group_num, period):
             [STIM_QUEUE_GROUP, STIM_QUEUE_PERIOD], 
             [0, period]
         ), 
-        dsp_enable_stim_grp(group_num)
+        #dsp_enable_stim_grp(group_num)
     ]
     for command in commands:
         auto_transmit(command)

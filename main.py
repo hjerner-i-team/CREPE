@@ -15,7 +15,8 @@ sys.path.insert(0, __currentdir[0:__currentdir.find("CREPE")+len("CREPE")])
 import time 
 
 from communication.hdf5_reader import HDF5Reader
-from neuro_processing.neuro_processing import NeuroProcessor
+#from neuro_processing.neuro_processing import NeuroProcessor
+from neuro_processing.meame_listener import MeameListener
 from communication.queue_service import QueueService, StartQueueService
 #from communication.meame_listener import MeameListener
 from multiprocessing import Process, Queue
@@ -35,21 +36,21 @@ class CREPE():
                 file_path,"\n\tqueue_services:\t",queue_services)
 
         if modus == CrepeModus.LIVE:
-            
-            neuro = StartQueueService(NeuroProcessor)
-            self.queue_services.append(neuro)
+            listener = StartQueueService(MeameListener, server_address = "10.20.92.130", port = 12340, bitrate=10000)
+            self.queue_services.append(listener)
 
         elif modus == CrepeModus.FILE:
             # initates a h5 reader and start the service
             hdf5 = StartQueueService(HDF5Reader, file_path=file_path)
             self.queue_services.append(hdf5)
 
-        elif modus == CrepeModus.OFFLINE:
-            neuro = StartQueueService(NeuroProcessor, meame_address = "127.0.0.1", meame_port = 40000, bitrate=1000)
-            self.queue_services.append(neuro)
         elif modus == CrepeModus.TEST:
             hdf5 = StartQueueService(HDF5Reader, mode=self.modus)
             self.queue_services.append(hdf5)
+
+        elif modus == CrepeModus.OFFLINE:
+            listener = StartQueueService(MeameListener, server_address = "127.0.0.1", port = 40000, bitrate=10000)
+            self.queue_services.append(listener)
 
         else:
             raise ValueError("Wrong crepe modus supplied")
