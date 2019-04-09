@@ -7,13 +7,12 @@ import queue
 class HWAPIWrapper(QueueService):
     app = None  # Do not make more than one HWAPIWrapper please
 
-    def __init__(self,queue_out, queue_in, name="HWAPI"):
+    def __init__(self, name="HWAPI", **kwargs):
         # Initialize queue service
         QueueService.__init__(
             self, 
             name=name, 
-            queue_out=queue_out, 
-            queue_in=queue_in
+            **kwargs
         )
 
         # Initialize flask app

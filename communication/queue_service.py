@@ -32,13 +32,17 @@ class QueueService():
     # @param name is the name of the service/class, only used when printing 
     # @param queue_out is the queue to (out)put data to
     # @param queue_in is the queue to get data from
-    def __init__(self, name, queue_out=None, queue_in=None):
+    def __init__(self, name, **kwargs):
         self.name = name
-        self.queue_out = queue_out
-        self.queue_in = queue_in
+        self.queue_out = None
+        self.queue_in = None
+        if "queue_out" in kwargs:
+            self.queue_out = kwargs["queue_out"]
+        if "queue_in" in kwargs:
+            self.queue_in = kwargs["queue_in"]
         print("\n[CREPE.stream_service.QueueService.init] ", 
-                "created QueueService object with \n\tname:\t", name, 
-                "\n\tqueue_out:\t", queue_out, "\n\tqueue_in:\t", queue_in)
+                "created QueueService object with \n\tname:\t", self.name, 
+                "\n\tqueue_out:\t", self.queue_out, "\n\tqueue_in:\t", self.queue_in)
     
     # puts an element onto the queue_out
     # @param data is the data to put unto the queue
@@ -113,7 +117,6 @@ class StartQueueService():
         if not "queue_out" in kwargs:
             queue_out = Queue()
             kwargs["queue_out"] = queue_out
-        print(kwargs)
         
         # create a shared string to get name of object, not really necesarry tho
         #self.name = Value(ctypes.c_char_p, "notaname")
@@ -140,8 +143,8 @@ Testing code:
 
 """
 class GenerateData(QueueService):
-    def __init__(self, queue_out):
-        QueueService.__init__(self, name="GENDATA", queue_out=queue_out)
+    def __init__(self, **kwargs):
+        QueueService.__init__(self, name="GENDATA", **kwargs)
 
     def run(self):
         i = 0
@@ -157,8 +160,8 @@ class GenerateData(QueueService):
                 return 
 
 class ProcessData(QueueService):
-    def __init__(self, queue_out, queue_in):
-        QueueService.__init__(self, name="PROCESSDATA" , queue_out=queue_out, queue_in=queue_in)
+    def __init__(self, **kwargs):
+        QueueService.__init__(self, name="PROCESSDATA", **kwargs)
         # we need at least 1000 elems before we can start to preprocess
         self.mov_avg_size = 1000
         
@@ -200,7 +203,7 @@ def main():
     #print("name of processs: ", gendata.get_name() , processdata.get_name())
     
     # create a dummy QueueService
-    dummy = QueueService(name="END", queue_in = processdata.queue_out)
+    dummy = QueueService(name="END", queue_in = gendata.queue_out)
     while True:
         d = dummy.get()
         if d is False:
