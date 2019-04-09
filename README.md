@@ -197,10 +197,10 @@ def run(self):
             self.put(random.randint(0,4))
 ```
 
-## How to start a QueueService object
+## How to start a QueueService object => StartQueueService
 Please remark that you should not have to use this helper class, as it is used for you in CREPE. But it migth be usefull for testing purposes. Please refer to `communication/queue_service.py` for an example.
 
-`StartQueueService` is a helper object that starts a new process (using multiprocessing), creates an output queue and runs the `run` loop function inside the new process. 
+`StartQueueService` is a helper class that starts a new process (using multiprocessing), creates an output queue and runs the `run` loop function inside the new process. 
 
 Use it like this:
 ```
@@ -208,7 +208,6 @@ class GenerateData(QueueService):
 ...
 class ProcessData(QueueService):
 ...
-processdata = StartQueueService(ProcessData, queue_in=gendata.queue_out)
 gendata = StartQueueService(GenerateData)
 processdata = StartQueueService(ProcessData, queue_in=gendata.queue_out)
 print("name of gendata: ", gendata.get_name()
@@ -253,42 +252,26 @@ It first finds this projects folders absolute path. And then inserts the new pat
 # Documentation
 
 ## QueueService
-QueueService is a class that helps with the communication between two processes with two queues. It is meant to be inherited by any class who wants to be run as a process in the CREPE pipeline.
+QueueService is a class that helps with the communication between data-flow elements. It gets data from a input queue and outputs data unto a different output queue. It is meant to be inherited by any class who wants to be run as a process in the CREPE data-flow pipeline.
 
-### Theory
+![QueueService flow](https://imgur.com/skMzmk8.png)
 
-QueueService employs two FIFO queues: `queue_out` is the queue that should be pushed to and `queue_in` is the queue that you can get data from.
+### Implementation
 
-We also implemented the same pattern with RPC, because of ease-of-use but it introduced too much performance overhead making the program too slow to be usefull. We therefor opted for a multiprocessing Queue based pattern. Queues are fast and efficient. The only downside is that there is a sligth performance loss because it has to pickle and unpickle numpy arrays.
+QueueService employs two FIFO queues: `queue_out` is the queue that should be pushed to and `queue_in` is the queue that you can get data from. 
+Two of QueueService's main functions `get()` and `put(data)` is wrapper functions for the multiproccessing Queue own `get()` and `put(data)` with additional functionality implementing the Poisionus Pill technice (todo explain this). 
+We implement this technique by calling the `end()` function. It sends a `PoisionPill` object unto the output queue. The next QueueService's `get()` checks if the next element is such a `PoisionPill` object, and if so, sends the poisiounus pill unto it's own output queue and returns false.
 
-#### Problem
-
-Since this project cannot live in a single process we have to spawn several processes that have a need to communicate with eachother.  
-
-#### Prestudy
-
-We looked at RPC, multiproccessing/threading and tcp as alternative ways for communication between processes.
-A Tcp connection would be more complex and time consuming to implement.
-Mulitprocessing was better than threading for our purpose. 
-Multiprocessing with shared memory or pipes is a good solution. Tough it would be a bit more complex, harder to implement and not as expandable as RPC.
-RPC would be a very good solution, since it was easy to setup and use. But since we require that our processes run a main loop it was too much overhead to both run the main loop and a rpc server on the same process.
-
-### How to use:
-For an example, look at the SSP repo
-
-#### QueueService class
-The queues are stored in `self.queue_out` and `self.queue_in` but you should never have to directly interact with them.
-They can be used by calling `self.put(data)` and `self.get()`. 
+#### Overview
 
 | Category |  Name | Description  | Params | Returns 
 |---|---|---|---|---|
+| Variable | name | name of this QueueService |   | |
 | Variable |  queue_in | Input queue to read from  |   | |
 | Variable |  queue_out | Output queue to output data to |   | |
 | Function | put | Put data onto the output queue | data = any kind of data | |
 | Function | get | Get the next data from the input queue, returns False on queue end (PoisonPill) |   | whatever elem was in the queue. Most likley a 2d segment |
 | Function | end | Signals that this QueueService is finnished (no more data will come) and sends a PoisonPill on the output queue |   |  | 
 | Helper Function | get_x_elems | Get at least x number of columns from queue |  x_elems = is the minimum number of columns to get | a single segment with shape (rows, x_elems or more) |
-| todo add rest |   |   |   |
-|   |   |   |   |
-|   |   |   |   |
-|   |   |   |   |
+| Helper Function | get_x_seg  |  get x numer of segments / items from queue. | x_seg = is the number of times to call .get()  |  a single segment concatinated from x_seg segments/items from queue |
+| Helper Function | get_n_col | Same as get_x_elems but without slow concatenations |  N = number of columns, seg_height = heigth of segment, seg_widt = width of segment | A 2d np array with dimension (seg_width, seg_height) |
