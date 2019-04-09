@@ -47,8 +47,8 @@ class MeameListener(QueueService):
             data+=packet
         return data
 
-    def __init__(self, server_address, port, bitrate  = 10000, segment_len = 100, record = False, queue_in = None, queue_out = None):
-        QueueService.__init__(self, name="MEAMELISTENER" , queue_out=queue_out, queue_in=queue_in)
+    def __init__(self, server_address, port, bitrate  = 10000, segment_len = 100, record = False, **kwargs ):
+        QueueService.__init__(self, name="MEAMELISTENER" , **kwargs)
 
         self.record_data = record
         self.file_path = ''
