@@ -16,9 +16,7 @@ from communication.hdf5_reader import HDF5Reader
 from communication.hw_api.hw_api import HWAPIWrapper, EndpointAction
 
 # neuro_processing
-from neuro_processing.neuro_processing import NeuroProcessor
 from neuro_processing.meame_listener import MeameListener
-from neuro_processing.processing import moving_avg, fft_max
 from neuro_processing.stream import Stream
 
 # utils

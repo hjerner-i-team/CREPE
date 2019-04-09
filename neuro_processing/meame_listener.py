@@ -95,7 +95,7 @@ class MeameListener(QueueService):
 
                 self.put(chunk)
                 n_chunks += 1
-                print("Segments recieved: {}".format(n_chunks))
+                #print("Segments recieved: {}".format(n_chunks))
     
             self.end()
             print("Connection closed. Recieved {} chunks".format(n_chunks))
