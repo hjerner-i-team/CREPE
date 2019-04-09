@@ -24,7 +24,7 @@ The demo setup will capture the IR profile of a rock/paper/scissor and trasnmitt
 - Adafruit 1.44" Color TFT LCD Display 
   - [Datasheet](https://cdn-learn.adafruit.com/downloads/pdf/adafruit-1-44-color-tft-with-micro-sd-socket.pdf?timestamp=1552457427)
 
-**Overveiw of complete setup:**
+**Overview of complete setup:**
 The harware is mounted inside a 3D printed container, powered by a power bank also mounted inside. A 1.44" TFT LCD dislay is mounted on he exterior of the container. The AMG8833 IR-sensor is mounted in the interior of the box, capturing data through a slot in the box. An adjustable plate is attached to the bottom of the container. This plate is equipped with a button, registering the hand of the subject. This button is connected to the Arduino.
 
 **Raspberry Pi: setup**
@@ -32,7 +32,6 @@ The Arduino Uno is through a PCB shield equipped with the IR-sensor, wifi module
 
 ### Requisites 
 - The Arduino Uno used is an un-official Arduino. It requires an USB-driver to connect to Windows. [Driver link]()
-- 
 
 ### Installation
 
@@ -45,7 +44,7 @@ sudo raspi-config --> enable SPI, I2C, SSH, VNC.
 ```
 
 Copy the file main.py and the folder "graphics" onto the desktop of your Raspberry Pi. 
-OPTIONAL: Copy the file main_with_visualization.py onto the desktop of your computer. This version is used for debugging, but will display a human-interpretable, interpolated image of the IR data collected by the sensor.
+OPTIONAL: Copy the file main_with_visualization.py onto the desktop of your Raspberry Pi. This version is used for debugging, but will display a human-interpretable, interpolated image of the IR data collected by the sensor.
 
 Installing Adafruit's Python library for the AMG8833 IR sensor.
 ```
