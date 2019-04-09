@@ -4,8 +4,8 @@ __currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfr
 sys.path.insert(0, __currentdir[0:__currentdir.find("/CREPE")+len("/CREPE")])
 """ End import fix """
 
-from CREPE.utils import get_connection
-from communication.stream_service import StreamService, DataModus, StreamSegmentIterator
+# from CREPE.utils import get_connection
+# from communication.stream_service import StreamService, DataModus, StreamSegmentIterator
 
 # import h5py
 import numpy as np
@@ -14,7 +14,9 @@ from matplotlib import animation
 
 class Visualiser:
     # filename = "recordings/recording5.hdf5"
-
+    def __init__(self):
+        print("[CREPE.utils.visualiser] ERROR !!! visualiser not implemented")
+    """
     def __init__(self):
         self.N = 100
 
@@ -48,3 +50,4 @@ class Visualiser:
     def run(self):
         ani = animation.FuncAnimation(self.fig, self.animate, fargs=(self,), interval=10, blit=True)
         plt.show()
+    """
