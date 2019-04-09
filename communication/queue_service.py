@@ -88,6 +88,18 @@ class QueueService():
             else:
                 data = np.concatenate((data, new_data), axis=1)
         return data
+    
+    #Same as get_x_elems but without slow concatenations
+    def get_n_col(self, N, seg_height, seg_width):
+        assert((N%seg_width) == 0)
+        data = np.zeros((seg_height,N))
+        for i in range(0, N, seg_width):
+            seg = self.get()
+            if(seg is False):
+                return False
+            data[:,i:i+seg_width] = seg
+        return data
+
 
 class StartQueueService():
     # Starts a new process that creates object and runs the run/loop function
