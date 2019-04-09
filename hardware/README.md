@@ -51,7 +51,7 @@ Installing Adafruit's Python library for the AMG8833 IR sensor.
 sudo pip3 install adafruit-circuitpython-amg88xx
 ```
 
-Installing ["Adafruit" ST7735R Library](https://github.com/KYDronePilot/Adafruit_ST7735r). This is an unofficial library derived from another official Adafruit LCD driver library. The motivation behind the use of this library is due to that the LCD display used in this project was originally intended for use with an Arduino, and thus the official Adafruit libraries are written for Arduino.  changed to enable use of the ST7735R LDC driver with Raspberry Pi. 
+Installing ["Adafruit" ST7735R Library](https://github.com/KYDronePilot/Adafruit_ST7735r). This is an unofficial library derived from another derivation of an official Adafruit LCD driver library. The motivation behind the use of this library is due to that the LCD display used in this project was originally intended for use with an Arduino, and thus the official Adafruit libraries are written for Arduino.
 
 ```
 sudo apt-get install build-essential python-dev python-smbus python-pip python-imaging python-numpy
@@ -60,7 +60,7 @@ clone https://github.com/KYDronePilot/Adafruit_ST7735r
 sudo python3 setup.py install (in the cloned git repository)
 ```
 
-Create systemd unit to enable the main python script to run on boot. This configuration will also restart the script in the event of a failure. This [tutorial](https://www.raspberrypi-spy.co.uk/2015/10/how-to-autorun-a-python-script-on-boot-using-systemd/) can be used as reference if something goes wrong.
+Create a systemd unit to enable the main python script to run on boot. This configuration will also restart the script in the event of a failure. This [tutorial](https://www.raspberrypi-spy.co.uk/2015/10/how-to-autorun-a-python-script-on-boot-using-systemd/) can be used as reference if something goes wrong.
 ```
 sudo nano /lib/systemd/system/CREPE.service
 ```
@@ -125,8 +125,9 @@ Please read [CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c6
 We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/your/project/tags). 
 
 ## Authors
-
-* **Billie Thompson** - *Initial work* - [PurpleBooth](https://github.com/PurpleBooth)
+* **Massoud Ibraheem** - *PCB and container design*
+* **Marius Nilsen** - *3D printing and container design*
+* **Thomas Nakken Larsen** - *Raspberry Pi programming and electronics architecture* - [GitHub](https://github.com/Vimlekisen)
 
 See also the list of [contributors](https://github.com/your/project/contributors) who participated in this project.
 
