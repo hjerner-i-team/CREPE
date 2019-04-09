@@ -35,13 +35,9 @@ class CREPE():
                 file_path,"\n\tqueue_services:\t",queue_services)
 
         if modus == CrepeModus.LIVE:
-            # TODO - since live is not yet implemented we generate a test stream
-#            hdf5 = StartQueueService(HDF5Reader, mode=self.modus)
-#            self.queue_services.append(hdf5)
             
             neuro = StartQueueService(NeuroProcessor)
             self.queue_services.append(neuro)
-
 
         elif modus == CrepeModus.FILE:
             # initates a h5 reader and start the service
@@ -51,6 +47,10 @@ class CREPE():
         elif modus == CrepeModus.OFFLINE:
             neuro = StartQueueService(NeuroProcessor, meame_address = "127.0.0.1", meame_port = 40000, bitrate=1000)
             self.queue_services.append(neuro)
+        elif modus == CrepeModus.TEST:
+            hdf5 = StartQueueService(HDF5Reader, mode=self.modus)
+            self.queue_services.append(hdf5)
+
         else:
             raise ValueError("Wrong crepe modus supplied")
 
