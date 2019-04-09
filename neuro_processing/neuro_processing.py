@@ -14,8 +14,8 @@ from neuro_processing.processing import *
 from communication.queue_service import QueueService
 
 class NeuroProcessor(QueueService):
-    def __init__(self, meame_address = "10.20.92.130", meame_port = 12340, bitrate = 10000, segment_length = 100,queue_out=None, queue_in=None):
-        QueueService.__init__(self, name="NEUROPROCESSOR" , queue_out=queue_out, queue_in=queue_in)
+    def __init__(self, meame_address = "10.20.92.130", meame_port = 12340, bitrate = 10000, segment_length = 100, **kwargs):
+        QueueService.__init__(self, name="NEUROPROCESSOR" , **kwargs)
 
         #Initialize streams
         self.meamestream = Stream(60, 10000)

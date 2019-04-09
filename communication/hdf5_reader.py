@@ -17,8 +17,8 @@ from crepe_modus import CrepeModus
 
 # reads from a hdf5 file and puts it unto the queue, or generates a random test stream and outputs it to the queue
 class HDF5Reader(QueueService):
-    def __init__(self, queue_out=None, file_path=None, mode=CrepeModus.FILE):
-        QueueService.__init__(self, name="HDF5READER", queue_out=queue_out)
+    def __init__(self, queue_out=None, file_path=None, mode=CrepeModus.FILE, **kwargs):
+        QueueService.__init__(self, name="HDF5READER", queue_out=queue_out, **kwargs)
         self.file_path = file_path
         self.mode = mode
 
