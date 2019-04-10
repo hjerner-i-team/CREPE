@@ -31,7 +31,7 @@ class CREPE():
     # @param data_file_path is the file path to an optional .h5 file
     # @param queue_services is a list of different child classes of QueueService with corresponding kwargs
     #           On the form [[ChildQueueService, {"queue_in": <a queue>, "queue_out": None}], [.., {...}], ...]
-    def __init__(self, modus=CrepeModus.LIVE, file_path = None, queue_services = None):
+    def __init__(self, modus=CrepeModus.LIVE, meame_speaker_periods=None, file_path = None, queue_services = None):
         self.modus = modus
         self.queue_services = []
         
@@ -71,7 +71,8 @@ class CREPE():
 
         # connect meame speaker here
         if init_meame_speaker:
-            qs = StartQueueService(MeameSpeaker, queue_in = self.queue_services[-1].queue_out)
+            kw = {"queue_in": self.queue_services[-1].queue_out, "periods": meame_speaker_periods}
+            qs = StartQueueService(MeameSpeaker, **kw)
             self.queue_services.append(qs)
 
         signal.signal(signal.SIGINT, lambda signal, frame: self._shutdown())

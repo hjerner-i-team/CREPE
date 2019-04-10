@@ -9,9 +9,11 @@ from communication.meame_speaker.speaker import *
 from communication.queue_service import QueueService
 
 class MeameSpeaker(QueueService):
-    def __init__(self, name="MEAMESPEAKER", **kwargs):
+    def __init__(self, periods, name="MEAMESPEAKER", **kwargs):
         QueueService.__init__(self, name, **kwargs)
         
+        self.periods = periods
+
         # Pre-defined stimuli group to work with
         self.stim_group = 0
 
@@ -37,11 +39,5 @@ class MeameSpeaker(QueueService):
         Returns status of transmission
         '''
         
-        periods = {
-            "None": 5000,
-            "Rock": 2500,
-            "Scissors": 1650,
-            "Paper": 1250,
-        }
 
-        set_stim(self.stim_group, periods[guess])
+        set_stim(self.stim_group, self.periods[guess])

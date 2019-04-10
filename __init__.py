@@ -4,11 +4,9 @@ __currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfr
 sys.path.insert(0, __currentdir[0:__currentdir.find("CREPE")+len("CREPE")])
 """ End import fix """
 
-import main
+from main import CREPE
 from crepe_modus import CrepeModus
 
-def CREPE(modus=CrepeModus.LIVE, file_path = None, queue_services = None):
-    return main.CREPE(modus=modus, file_path=file_path, queue_services = queue_services)
 
 # communication
 from communication.queue_service import QueueService, PoisonPill, is_poison_pill, StartQueueService
