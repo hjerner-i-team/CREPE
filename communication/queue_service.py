@@ -45,19 +45,22 @@ class QueueService():
     
     # puts an element onto the queue_out
     # @param data is the data to put unto the queue
-    def put(self, data):
-        self.queue_out.put(data)
+    def put(self, data, **kwargs):
+        self.queue_out.put(data, **kwargs)
 
-    def end(self):
-        # print("\n[QueueService.end] ", self.name, " putting PoisonPill on queue")
-        self.queue_out.put(PoisonPill())
+    def end(self, **kwargs):
+        print("\n[QueueService.end] ", self.name, " putting PoisonPill on queue")
+        self.queue_out.put(PoisonPill(), **kwargs)
 
     # gets the next element in queudata to put unto the queue
     # @returns whatever elem was in the queue. Most likley a 2d segment
-    def get(self):
-        data = self.queue_in.get()
+    def get(self, **kwargs):
+        data = self.queue_in.get(**kwargs)
+        #print(data)
         # print("\n[QueueService.get] ", self.name, " recived PoisonPill, returning False")
         if is_poison_pill(data):
+            if self.queue_out is not None:
+                self.end()
             return False
         else:
             return data
