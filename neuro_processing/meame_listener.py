@@ -17,10 +17,16 @@ from communication.queue_service import QueueService
 class MeameListener(QueueService):
 
     def send_start(self):
+        '''
+        Sends get request that starts DAQ output. DEPRECATED
+        '''
         r = requests.get(self.url + '/DAQ/start')
         print(r)
 
     def send_config(self):
+        '''
+        Configure the meame-server DAQ output
+        '''
         print("Sending config to {}".format(self.url))
         conf = { 'samplerate' : self.bitrate , 'segmentLength' : self.segment_len }
         r = 0
@@ -32,14 +38,20 @@ class MeameListener(QueueService):
         return r
 
     def savechunk(self, dset, chunk):
+        '''
+        Append chunk to dset
+        '''
         N = chunk.shape[1]
         dset.resize(dset.shape[1]+N, axis=1)
         dset[:,-N:] = chunk
 
-    def recvchunk(self, sock, chunklen):
+    def recvchunk(self, sock, segment_len):
+        '''
+        Retrieve a segment of length segment_len from TCP-buffer
+        '''
         data = b''
-        while(len(data)<chunklen):
-            packet = sock.recv(chunklen - len(data))
+        while(len(data)<segment_len):
+            packet = sock.recv(segment_len - len(data))
             if not packet:
                 if(len(data) > 0):
                     print("Incomplete segment recieved")
@@ -69,17 +81,17 @@ class MeameListener(QueueService):
         chunk_len = chunk_dim[0] * chunk_dim[1] * 4
         print("segment len: {}".format(chunk_len))
 
-#        if(self.server_address != "127.0.0.1"):
-#            r = self.send_config()
-#            if(r != 200):
-#                print("Meame server not online")
-#                self.end()
-#                return
-#            self.send_start()
-#            print("Config sent")
-#            time.sleep(1)
+        if(self.server_address != "127.0.0.1"):
+            r = self.send_config()
+            if(r != 200):
+                print("Meame server not online")
+                self.end()
+                return
+            self.send_start()
+            print("Config sent")
+            time.sleep(1)
 
-
+        time.sleep(5)
         self.sock.connect((self.server_address, self.port))
         print("Connected")
 
