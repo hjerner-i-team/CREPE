@@ -69,7 +69,7 @@ class HDF5Reader(QueueService):
     def run(self):
         if self.mode == CrepeModus.FILE:
             self.generate_H5_stream()
-        elif self.mode == CrepeModus.LIVE:
+        elif self.mode == CrepeModus.TEST:
             i = 0
             while True:
                 seg = self._generate_random_test_segment_list(100)
