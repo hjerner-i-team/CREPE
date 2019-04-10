@@ -64,7 +64,20 @@ class QueueService():
             return False
         else:
             return data
-
+    
+    # empties queue and get last element or false if queue is empty
+    def empty_queue_and_get_last(self):
+        last_elem = False
+        while True:
+            try:
+                d = self.get(block=False)
+                last_elem = d
+                if d is False:
+                    break
+            except queue.Empty:
+                break
+        return last_elem 
+    
     # Get at least x number of columns from queue
     # @param x_elems is the minimum number of columns to get
     # @returns a single segment with shape (rows, x_elems or more) 
@@ -82,6 +95,7 @@ class QueueService():
                 break
         return data
     
+
     # get x numer of segments / items from queue. 
     # @param x_seg is the number of times to call .get()
     # @returns a single segment concatinated from x_seg segments/items from queue
