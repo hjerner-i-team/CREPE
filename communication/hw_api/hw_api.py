@@ -89,13 +89,16 @@ class HWAPIWrapper(QueueService):
         # out_json = get_from_readout_current()
         # Return output (as json)
         # return out_json
-        try:
-            out = self.queue_out.get(block=False)
-        except queue.Empty:
+        if self.queue_in.empty():
             self.out_valid = False
-            return self.last_input
-        self.out_valid = True
-        return out
+        else: 
+            while not self.queue_in.empty():
+                try:
+                    self.last_input = self.queue_in.get(block=False)  # Drain it
+                except queue.Empty:
+                    break
+            self.out_valid = True
+        return self.last_input
 
     # Screen data output
     # --------------------------------------------------------------------------
