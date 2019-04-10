@@ -30,8 +30,7 @@ def is_poison_pill(data):
 # Inherit from this class to gain access to queues 
 class QueueService():
     # @param name is the name of the service/class, only used when printing 
-    # @param queue_out is the queue to (out)put data to
-    # @param queue_in is the queue to get data from
+    # @param **kwargs is queue arguments
     def __init__(self, name, **kwargs):
         self.name = name
         self.queue_out = None
@@ -40,7 +39,7 @@ class QueueService():
             self.queue_out = kwargs["queue_out"]
         if "queue_in" in kwargs:
             self.queue_in = kwargs["queue_in"]
-        print("\n[CREPE.stream_service.QueueService.init] ", 
+        print("\n[CREPE.communication.QueueService.init] ", 
                 "created QueueService object with \n\tname:\t", self.name, 
                 "\n\tqueue_out:\t", self.queue_out, "\n\tqueue_in:\t", self.queue_in)
     
@@ -82,7 +81,7 @@ class QueueService():
     
     # get x numer of segments / items from queue. 
     # @param x_seg is the number of times to call .get()
-    # @returns a single segment concatinaed from x_seg segments/items from queue
+    # @returns a single segment concatinated from x_seg segments/items from queue
     def get_x_seg(self, x_seg):
         data = None
         for i in range(x_seg):

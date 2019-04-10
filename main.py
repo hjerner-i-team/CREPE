@@ -28,6 +28,8 @@ class CREPE():
     # starts the required communication services and inits crepe
     # @param modus is a CrepeModus enum
     # @param data_file_path is the file path to an optional .h5 file
+    # @param queue_services is a list of different child classes of QueueService with corresponding kwargs
+    #           On the form [[ChildQueueService, {"queue_in": <a queue>, "queue_out": None}], [.., {...}], ...]
     def __init__(self, modus=CrepeModus.LIVE, file_path = None, queue_services = None):
         self.modus = modus
         self.queue_services = []
