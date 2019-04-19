@@ -19,7 +19,7 @@ class MeameSpeaker(QueueService):
 
         # Initialize the MEAME server with desired config
         #do_remote_example()
-        template_setup()
+        template_complete()
 
     def run(self):
         while True:
