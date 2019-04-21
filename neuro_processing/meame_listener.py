@@ -10,7 +10,6 @@ import os
 import json
 import time
 import requests
-from neuro_processing.stream import Stream
 from communication.queue_service import QueueService
 
 
@@ -91,7 +90,6 @@ class MeameListener(QueueService):
             print("Config sent")
             time.sleep(1)
 
-        time.sleep(5)
         self.sock.connect((self.server_address, self.port))
         print("Connected")
 

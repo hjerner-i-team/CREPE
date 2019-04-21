@@ -17,7 +17,6 @@ from communication.hw_api.hw_api import HWAPIWrapper, EndpointAction
 
 # neuro_processing
 from neuro_processing.meame_listener import MeameListener
-from neuro_processing.stream import Stream
 
 # utils
 from utils.get_queue import get_queue
