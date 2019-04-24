@@ -74,7 +74,7 @@ class QueueService():
                 last_elem = d
                 if d is False:
                     break
-            except queue.Empty:
+            except:
                 break
         return last_elem 
     

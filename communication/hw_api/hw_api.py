@@ -50,7 +50,7 @@ class HWAPIWrapper(QueueService):
         self.out_valid = False  # Indicates if output value is "stable"
         
     def run(self):
-        self.app.run()
+        self.app.run(host='129.241.209.138')
 
     def add_endpoint(self, endpoint=None, endpoint_name=None, handler=None, methods=['GET']):
         self.app.add_url_rule(
@@ -90,7 +90,7 @@ class HWAPIWrapper(QueueService):
         # Return output (as json)
         # return out_json
 
-        latest = self.empty_queue_and_get()
+        latest = self.empty_queue_and_get_last()
         if latest:
             self.out_valid = True
             self.last_input = latest
