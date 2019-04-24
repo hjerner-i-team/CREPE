@@ -54,37 +54,26 @@ def template_setup():
         - Square stimuli waves for those groups
         - Apply a stimuli frequeny to one of those groups
 
-    This is a replica of the procedure found in the MEAME-DSP repository, and
-    at the time of writing also callable at /DSP/stim/setup/.
+    This is a modification of the procedure found in the MEAME-DSP repository, 
+    and at the time of writing also callable at /DSP/stim/setup/.
     '''
+    # Reset device
+    reset_device()
 
-    # A list of commands to run
-    # TODO: More trimming
+    # Apply square wave
+    apply_wave_shape('Square')
+
+    # The block of commands which could not be abstracted in time. Sorry
     commands = [
-        dsp_set_elec_grp_auto(),  # Set electrode group auto
-        dsp_stop_stim_queue(),  # Stop stim queue
-        dsp_reset(),
-        reg_write_req([WRT_PTR_STIM_1], [0]),
-        dsp_stop_stim_queue(),  # Stop stim queue
-        # Apply square wave
-        reg_write_req([STG_MWRITE1, STG_MWRITE1], [32593, 1671343]),
-        reg_write_req([WRT_PTR_STIM_2], [0]),
-        reg_write_req([STG_MWRITE2, STG_MWRITE2], [32211289, 655385]),
-        reg_write_req([WRT_PTR_STIM_3], [0]),
-        dsp_stop_stim_queue(),  # Stop stim queue
-        # Apply square wave
-        reg_write_req([STG_MWRITE3, STG_MWRITE3], [32593, 1671343]),
-        reg_write_req([WRT_PTR_STIM_4], [0]),
-        reg_write_req([STG_MWRITE4, STG_MWRITE4], [3211289, 655385]),
-        reg_write_req([WRT_PTR_STIM_5], [0]), 
-        dsp_stop_stim_queue(),  # Stop stim queue
-        # Apply square wave
-        reg_write_req([STG_MWRITE5, STG_MWRITE5], [32593, 1671343]), 
-        reg_write_req([WRT_PTR_STIM_6], [0]),
-        reg_write_req([STG_MWRITE6, STG_MWRITE6], [3211289, 655385]),  
-        dsp_reset(),  # Reset
         # Set blanking protection
-        dsp_set_blanking_prot([4268, 4272], [311724626, 310378578]),
+        dsp_set_blanking(
+            [BLANKING_EN_ELECTRODES1, BLANKING_EN_ELECTRODES2], 
+            [311724626, 310378578]
+        ),
+        dsp_set_blanking_prot(
+            [BLANKING_EN_ELECTRODES1, BLANKING_EN_ELECTRODES2], 
+            [311724626, 310378578]
+        ),
         # Config electrode group 0
         dsp_conf_elec_grp(
             [STIM_QUEUE_GROUP, STIM_QUEUE_ELEC0, STIM_QUEUE_ELEC1], 
@@ -102,23 +91,26 @@ def template_setup():
         ),
         # Set electrode group manual
         dsp_set_elec_grp_manual(
-            [4284, 4288, 4292, 4296], 
+            [
+                ELECTRODE_MODE_ARG1,
+                ELECTRODE_MODE_ARG2,
+                ELECTRODE_MODE_ARG3,
+                ELECTRODE_MODE_ARG4
+            ], 
             [13382412, 204672195, 13068, 204668928]
-        ),
-        dsp_commit_conf(),  # Commit config
-        dsp_start_stim_queue(),  # Start stim queue
-        # Apply a period of 0.1 s to electrode group 1. == 10Hz
-        dsp_set_elec_grp_period( 
-            [STIM_QUEUE_GROUP, STIM_QUEUE_PERIOD], 
-            [0, 5000]
-        ),
+        )
     ]  
     
     # Send commands in order to execute them
     for command in commands:
         auto_transmit(command)
+    
+    commit_and_start_stim()
+    
+    # Apply a period of 0.1 s to electrode group 1. == 10Hz
+    set_stim(0, 5000)
 
-    # Reset DAQ for good measure. TODO: needed?
+    # Configure DAQ for good measure.
     daq_config(1000, 100),
     meame_transmit('DAQ-start')
 
@@ -127,14 +119,14 @@ def template_stim():
     '''
     Apply stimulation, just like the the remote equivalent does.
     '''
-    command = dsp_func_call(10, [STIM_QUEUE_GROUP], [0]) 
+    command = dsp_enable_stim_grp(0)
     auto_transmit(command)
 
 def do_remote_example():
     ''' 
     Use the remote GET urls to set up an example experiment.
     This uses the setups located on the MEAME server. 
-    Returns requests requests touple
+    Returns requests requests touple.
     '''
     request_flash = meame_transmit('DSP-flash')
     request_t_1 = meame_transmit('replay-setup')
@@ -152,6 +144,109 @@ def do_remote_example():
 
 # Core methods
 # ------------------------------------------------------------------------------
+# These methods should all transmit instructions themselves and be blocking,
+# so that configurations are applied in order. 
+
+def reset_device():
+    commands = [
+        dsp_set_elec_grp_auto(),  # Set electrode group auto
+        dsp_stop_stim_queue(),  # Stop stim queue
+        dsp_reset(),
+    ]
+
+    # Send commands in order to execute them
+    for command in commands:
+        auto_transmit(command)
+
+def set_stim(group_num, period):
+    '''
+    Apply stimulation to a predefined stim group. 
+    The period, or time interval between wave peaks, is given as a 
+    multiple of 20 micro seconds.
+    Example: A period=5000 gives an applied period of 5000 * 20us = 0.1s
+    TODO: This code is unverified!
+    :param int group_num: Predefined number of target group
+    :param int period: Period to apply, as a multiple of 20 micro seconds
+    '''
+    command = dsp_set_elec_grp_period( 
+        [STIM_QUEUE_GROUP, STIM_QUEUE_PERIOD], 
+        [0, period]
+        ) 
+    auto_transmit(command)
+
+def define_elec_grp(group_num, electrodes):
+    '''
+    TODO: At the time of writing too many details are unknown to make a nice,
+    general method. 
+    Allow user to define electrode groups without having to mess with bit-maps.
+    :param int group_num: Predefined number of target group
+    :param int[] electrodes: Select which electrodes should be part of it
+    '''
+    pass
+
+def apply_wave_shape(shape):
+    '''
+    Apply a specific wave shape for the applied stimuli. 
+    At the moment only square waves are supported.
+    TODO: Make more general. 
+    :param str shape: The shape to apply. 
+    Returns integer to indicate success or falure. 
+    '''
+    if shape == 'Square':
+        commands = [
+            # Apply square wave, this 'just works'
+            reg_write_req([WRT_PTR_STIM_1], [0]),
+            reg_write_req([STG_MWRITE1, STG_MWRITE1], [32593, 1671343]),
+            reg_write_req([WRT_PTR_STIM_2], [0]),
+            reg_write_req([STG_MWRITE2, STG_MWRITE2], [32211289, 655385]),
+            dsp_stop_stim_queue(),
+            reg_write_req([WRT_PTR_STIM_3], [0]),
+            reg_write_req([STG_MWRITE3, STG_MWRITE3], [32593, 1671343]),
+            reg_write_req([WRT_PTR_STIM_4], [0]),
+            reg_write_req([STG_MWRITE4, STG_MWRITE4], [3211289, 655385]),
+            dsp_stop_stim_queue(),
+            reg_write_req([WRT_PTR_STIM_5], [0]), 
+            reg_write_req([STG_MWRITE5, STG_MWRITE5], [32593, 1671343]), 
+            reg_write_req([WRT_PTR_STIM_6], [0]),
+            reg_write_req([STG_MWRITE6, STG_MWRITE6], [3211289, 655385]),  
+            dsp_stop_stim_queue(),
+            dsp_reset(), # Reset
+        ]
+        # Send commands in order to execute them
+        for command in commands:
+            auto_transmit(command)
+        return 0
+    else: 
+        print("Unrecognized wave shape selected, not applied.")
+        return -1
+
+def commit_and_start_stim():
+    commands = [
+        dsp_commit_conf(),  # Commit config
+        dsp_start_stim_queue(),  # Start stim queue
+    ]  
+    # Send commands in order to execute them
+    for command in commands:
+        auto_transmit(command)
+
+def dsp_get_status(do_print=False): 
+    '''
+    Display the DSP's current state of well-being. 
+    
+    :param bool do_print: Set true to print to stdout. 
+    Returns a json in the format:
+        TODO
+    '''
+    response_json = meame_transmit('status')
+    response_string = json.loads(response.text)
+    if do_print:
+        # TODO: formatting
+        print(response_string)
+    return response_string
+
+# Communication methods
+# ------------------------------------------------------------------------------
+# Methods responsible for transmitting things to the right API destination.
 
 def auto_transmit(json_msg):
     ''' 
@@ -166,7 +261,6 @@ def auto_transmit(json_msg):
         request = meame_transmit('DSP-call', json_msg)
     elif 'samplerate' in json_obj:
         request = meame_transmit('DAQ-connect', json_msg)
-        print("Sent to DAQ: " + json.dumps(json_obj))
     elif 'electrodes' in json_obj:
         request = meame_transmit('DSP-write', json_msg)
     elif 'values' in json_obj:
@@ -194,7 +288,6 @@ def meame_transmit(destination, json_msg=None):
     '''
     # The full destination of the request
     full_dest = "http://" + MEAME_IP + ':' + MEAME_input_port + urls[destination]
-
     # Send request
     if json_msg:
         #r = requests.post(full_dest, json=json_msg)
@@ -204,51 +297,6 @@ def meame_transmit(destination, json_msg=None):
         r=requests.get(full_dest)
     return r
 
-def dsp_get_status(do_print=False): 
-    '''
-    Display the DSP's current state of well-being. 
-    
-    :param bool do_print: Set true to print to stdout. 
-    Returns a json in the format:
-        TODO
-    '''
-    response_json = meame_transmit('status')
-    response_string = json.loads(response.text)
-    if do_print:
-        # TODO: formatting
-        print(response_string)
-    return response_string
-
-def set_stim(group_num, period):
-    '''
-    Apply stimulation to a predefined stim group. 
-    The period, or time interval between wave peaks, is given as a 
-    multiple of 20 micro seconds.
-    Example: A period=5000 gives an applied period of 5000 * 20us = 0.1s
-    TODO: This code is unverified!
-    :param int group_num: Predefined number of target group
-    :param int period: Period to apply, as a multiple of 20 micro seconds
-    '''
-    commands = [
-        dsp_set_elec_grp_period( 
-            [STIM_QUEUE_GROUP, STIM_QUEUE_PERIOD], 
-            [0, period]
-        ), 
-        #dsp_enable_stim_grp(group_num)
-    ]
-    for command in commands:
-        auto_transmit(command)
-
-def define_elec_grp(group_num, electrodes):
-    '''
-    TODO
-    Allow user to define electrode groups without having to mess with bit-maps.
-    :param int group_num: Predefined number of target group
-    :param int[] electrodes: Select which electrodes should be part of it
-    '''
-    pass
-
-
 # DSP function wrappers
 # ------------------------------------------------------------------------------
 # The DSP (Digital Signal Processor) features 15 separate functions. 
@@ -257,14 +305,14 @@ def define_elec_grp(group_num, electrodes):
 
 def dsp_dump():
     '''
-    TODO: description
+    TODO: Functionality unknown.
     Returns a serialized json object string
     '''
     return dsp_func_call(1)
 
 def dsp_reset():
     '''
-    Reset the dsp. TODO: Why?
+    Reset the DSP. Is usually called in between experiments.
     Returns a serialized json object string
     '''
     return dsp_func_call(2)
@@ -299,31 +347,37 @@ def dsp_set_elec_grp_auto():
  
 def dsp_commit_conf():
     '''
-    TODO
-    Returns a serialized json object string
+    Apply the configuration specified by previous dsp config commands.
+    New configurations stay in a separate location in memory until this
+    method is called.  
+    Returns a serialized json object string.
     '''
     return dsp_func_call(6)
 
 def dsp_start_stim_queue():
     '''
-    TODO
-    Returns a serialized json object string
+    Start stimulation queue. The stim queue is responsible for applying
+    stimuli to electrode groups at regular intervals.
+    Returns a serialized json object string.
     '''
     return dsp_func_call(7)
 
 def dsp_stop_stim_queue():
     '''
-    TODO
-    Returns a serialized json object string
+    Stop the stimulation queue.
+    Returns a serialized json object string.
     '''
     return dsp_func_call(8)
 
 def dsp_set_elec_grp_period(arg_addrs=[], arg_vals=[]):
     '''
-    TODO
-    :param int[] arg_addrs: Memory addresses of arguments
-    :param int[] arg_vals: Values of arguments
-    Returns a serialized json object string
+    Specify the period of the voltage wave that is applied as stimuli to a
+    group. The period is the time between two identical points of a wave, such
+    as the time between two peaks. The period is set as a multiple of 20
+    microseconds. 
+    :param int[] arg_addrs: Memory addresses of target group and period.
+    :param int[] arg_vals: Group number and period as multiple of 20us. 
+    Returns a serialized json object string.
     '''
     return dsp_func_call(9, arg_addrs, arg_vals)
 
@@ -337,40 +391,43 @@ def dsp_enable_stim_grp(group_number):
 
 def dsp_disable_stim_grp():
     '''
-    TODO
-    Returns a serialized json object string
+    Disable a single group of stimulation electrodes. 
+    :param int group_number: The number of the selected group
+    Returns a serialized json object string.
     '''
     return dsp_func_call(11)
 
 def dsp_commit_conf_dbg():
     '''
     TODO
-    Returns a serialized json object string
+    Returns a serialized json object string.
     '''
     return dsp_func_call(12)
 
 def dsp_write_sq_dbg():
     '''
-    Deprecated!
+    Deprecated! Writes config to a separate, readable area of memory.
     Was used during DSP debugging, but serves not purpose at this time.
     Returns a serialized json object string
     '''
     return dsp_func_call(13)
 
-def dsp_set_blanking():
+def dsp_set_blanking(arg_addrs=[], arg_vals=[]):
     '''
     Blanking disconnects all electrodes for a short period of time during the 
     stimulation pulse, to reduce stimulation artefacts.
-    Returns a serialized json object string
+    Returns a serialized json object string.
     '''
-    return dsp_func_call(14)
+    return dsp_func_call(14, arg_addrs, arg_vals)
 
 def dsp_set_blanking_prot(arg_addrs=[], arg_vals=[]):
     '''
-    TODO
-    :param int[] arg_addrs: Addresses of arguments ???
-    :param int[] arg_vals: Values of arguments
-    Returns a serialized json object string
+    Blanking protection blocks recording when an electrode stimulates, so
+    that when enabled you should not be able to see the spike (unless there
+    is a propagation delay that is). [Unverified, citation needed.]
+    :param int[] arg_addrs: Addresses of electrode groups
+    :param int[] arg_vals: Bit map of electrodes to enable blanking_prot on
+    Returns a serialized json object string.
     '''
     return dsp_func_call(15, arg_addrs, arg_vals)
 
@@ -384,17 +441,16 @@ def dsp_set_blanking_prot(arg_addrs=[], arg_vals=[]):
 
 def daq_config(samplerate, segmentLength):
     '''
-    Configure MEAME's DAQ.
-
-    :param int samplerate: Rate of samling TODO: Better description
-    :param int segmentLength: number of 
+    Configure MEAME's DAQ. 
+    :param int samplerate: Rate of samling
+    :param int segmentLength: Number of samples per segment.
 
     When you send a HTTP POST with the JSON object shown below MEAME will listen
     for an incoming TCP connection on port 12340. Since there is only one port 
     for 60 channels the data must be multiplexed. A segment length of 100 means
     that the TCP stream will be segmented, the first 100 integers (400 bytes) will
     be data for 0, the next 100 ints for channel 1 and so forth.
-    Returns a serialized json object string
+    Returns a serialized json object string.
     '''
     daq_conf = {'samplerate': samplerate, 'segmentLength': segmentLength}
     daq_json = json.dumps(daq_conf)
@@ -437,7 +493,7 @@ def stim_req(electrodes, stim_freqs):
     :param int[] electrodes: List of electrodes to stimulate
     :param float[] stim_freq: Frequency to apply TODO: unit?
     Note: Don't use decimals, use float as 'double'
-    Returns a serialized json object string
+    Returns a serialized json object string.
     '''
     stim_req = {'electrodes': electrodes, 'stimFreqs': stim_freqs}
     stim_json = json.dumps(daq_conf)
@@ -446,8 +502,8 @@ def stim_req(electrodes, stim_freqs):
 def reg_read_req(addrs):
     ''' 
     Read values of specific registers/addresses.
-    :param: int[] addrs: List of uint memory addresses
-    Returns a serialized json object string
+    :param: int[] addrs: List of uint memory addresses.
+    Returns a serialized json object string.
     '''
     reg_red_req = {'addresses': addrs}
     reg_red_json = json.dumps(reg_red_req)
@@ -456,9 +512,9 @@ def reg_read_req(addrs):
 def reg_write_req(addrs, vals):
     '''
     Set the values of specific registers/addresses.
-    :param int[] addrs: List of uint memory addresses
-    :param int[] vals: List of uint values for registers
-    Returns a serialized json object string
+    :param int[] addrs: List of uint memory addresses.
+    :param int[] vals: List of uint values for registers.
+    Returns a serialized json object string.
     '''
     reg_wrt_req = {"addresses": addrs, "values": vals}
     reg_wrt_json = json.dumps(reg_wrt_req)
@@ -466,9 +522,9 @@ def reg_write_req(addrs, vals):
 
 def debug_msg(msg):
     '''
-    Send a debug message, is probably logged somewhere
-    :param str msg: A descriptive debug message
-    Returns a serialized json object string
+    Send a debug message, is probably logged somewhere.
+    :param str msg: A descriptive debug message.
+    Returns a serialized json object string.
     '''
     dbg_msg = {'message': msg}
     msg_json = json.dumps(dbg_msg)

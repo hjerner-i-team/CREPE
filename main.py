@@ -18,6 +18,7 @@ from communication.hdf5_reader import HDF5Reader
 #from neuro_processing.neuro_processing import NeuroProcessor
 from neuro_processing.meame_listener import MeameListener
 from communication.queue_service import QueueService, StartQueueService
+from communication.meame_speaker.meame_speaker import MeameSpeaker
 #from communication.meame_listener import MeameListener
 from multiprocessing import Process, Queue
 from crepe_modus import CrepeModus
@@ -28,17 +29,20 @@ class CREPE():
     # starts the required communication services and inits crepe
     # @param modus is a CrepeModus enum
     # @param data_file_path is the file path to an optional .h5 file
-    def __init__(self, modus=CrepeModus.LIVE, file_path = None, queue_services = None):
+    # @param queue_services is a list of different child classes of QueueService with corresponding kwargs
+    #           On the form [[ChildQueueService, {"queue_in": <a queue>, "queue_out": None}], [.., {...}], ...]
+    def __init__(self, modus=CrepeModus.LIVE, meame_speaker_periods=None, file_path = None, queue_services = None):
         self.modus = modus
         self.queue_services = []
         
         print("\n[CREPE.init] init crepe with args:\n\tmodus_\t",modus,"\n\tfile_path:\t", 
                 file_path,"\n\tqueue_services:\t",queue_services)
-
+        
+        init_meame_speaker = False
         if modus == CrepeModus.LIVE:
             listener = StartQueueService(MeameListener, server_address = "10.20.92.130", port = 12340, bitrate=10000)
             self.queue_services.append(listener)
-
+            init_meame_speaker = True
         elif modus == CrepeModus.FILE:
             # initates a h5 reader and start the service
             hdf5 = StartQueueService(HDF5Reader, file_path=file_path)
@@ -66,6 +70,11 @@ class CREPE():
                 print("\n[CREPE.init] started ", len(self.queue_services) - 1 ," extra services")
 
         # connect meame speaker here
+        if init_meame_speaker:
+            kw = {"queue_in": self.queue_services[-1].queue_out, "periods": meame_speaker_periods}
+            qs = StartQueueService(MeameSpeaker, **kw)
+            self.queue_services.append(qs)
+
         signal.signal(signal.SIGINT, lambda signal, frame: self._shutdown())
     
     def get_first_queue(self):

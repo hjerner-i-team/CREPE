@@ -32,13 +32,19 @@ class HDF5Reader(QueueService):
         # Use the program hdfviewer or check our upcomming documentation for full .h5 format
         data = f['Data']['Recording_0']['AnalogStream']['Stream_0']['ChannelData']
         #put the data unto the queue 
+        segments = 0
         for i in range(100, len(data[0]) + 1, 100):
-            self.put(data[:, i - 100:i])
+            d = data[:, i - 100:i]
+            if len(d[0]) > 0:
+                segments += 1
+                self.put(d)
         # if the data is not dividable by 100, add the remaning
         remaining = data[:, len(data) - i % 100:len(data)]
-        self.put(remaining)
+        if len(remaining[0]) > 0:
+            segment += 1
+            self.put(remaining)
         print("\n[CREPE.communication.hdf5_reader.generate_H5_stream] ", 
-                "all hdf5 data pushed to stream")
+                "all hdf5 data pushed to stream with, ", segments, " seg and ",  len(data[0]), " elemnts in each row")
         # after all data is sent, send poison pill 
         self.end()
         f.close()
@@ -63,7 +69,7 @@ class HDF5Reader(QueueService):
     def run(self):
         if self.mode == CrepeModus.FILE:
             self.generate_H5_stream()
-        elif self.mode == CrepeModus.LIVE:
+        elif self.mode == CrepeModus.TEST:
             i = 0
             while True:
                 seg = self._generate_random_test_segment_list(100)

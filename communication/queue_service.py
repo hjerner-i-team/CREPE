@@ -30,8 +30,7 @@ def is_poison_pill(data):
 # Inherit from this class to gain access to queues 
 class QueueService():
     # @param name is the name of the service/class, only used when printing 
-    # @param queue_out is the queue to (out)put data to
-    # @param queue_in is the queue to get data from
+    # @param **kwargs is queue arguments
     def __init__(self, name, **kwargs):
         self.name = name
         self.queue_out = None
@@ -40,29 +39,45 @@ class QueueService():
             self.queue_out = kwargs["queue_out"]
         if "queue_in" in kwargs:
             self.queue_in = kwargs["queue_in"]
-        print("\n[CREPE.stream_service.QueueService.init] ", 
+        print("\n[CREPE.communication.QueueService.init] ", 
                 "created QueueService object with \n\tname:\t", self.name, 
                 "\n\tqueue_out:\t", self.queue_out, "\n\tqueue_in:\t", self.queue_in)
     
     # puts an element onto the queue_out
     # @param data is the data to put unto the queue
-    def put(self, data):
-        self.queue_out.put(data)
+    def put(self, data, **kwargs):
+        self.queue_out.put(data, **kwargs)
 
-    def end(self):
-        # print("\n[QueueService.end] ", self.name, " putting PoisonPill on queue")
-        self.queue_out.put(PoisonPill())
+    def end(self, **kwargs):
+        print("\n[QueueService.end] ", self.name, " putting PoisonPill on queue")
+        self.queue_out.put(PoisonPill(), **kwargs)
 
     # gets the next element in queudata to put unto the queue
     # @returns whatever elem was in the queue. Most likley a 2d segment
-    def get(self):
-        data = self.queue_in.get()
+    def get(self, **kwargs):
+        data = self.queue_in.get(**kwargs)
+        #print(data)
         # print("\n[QueueService.get] ", self.name, " recived PoisonPill, returning False")
         if is_poison_pill(data):
+            if self.queue_out is not None:
+                self.end()
             return False
         else:
             return data
-
+    
+    # empties queue and get last element or false if queue is empty
+    def empty_queue_and_get_last(self):
+        last_elem = False
+        while True:
+            try:
+                d = self.get(block=False)
+                last_elem = d
+                if d is False:
+                    break
+            except queue.Empty:
+                break
+        return last_elem 
+    
     # Get at least x number of columns from queue
     # @param x_elems is the minimum number of columns to get
     # @returns a single segment with shape (rows, x_elems or more) 
@@ -80,9 +95,10 @@ class QueueService():
                 break
         return data
     
+
     # get x numer of segments / items from queue. 
     # @param x_seg is the number of times to call .get()
-    # @returns a single segment concatinaed from x_seg segments/items from queue
+    # @returns a single segment concatinated from x_seg segments/items from queue
     def get_x_seg(self, x_seg):
         data = None
         for i in range(x_seg):
