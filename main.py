@@ -12,30 +12,104 @@ __currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfr
 sys.path.insert(0, __currentdir[0:__currentdir.find("CREPE")+len("CREPE")])
 """ End import fix """
 
-from multiprocessing import Process
-from communication.start import main as communication_main
-from neuro_processing.start import main as neuro_main
+import time 
+
+from communication.hdf5_reader import HDF5Reader
+#from neuro_processing.neuro_processing import NeuroProcessor
+from neuro_processing.meame_listener import MeameListener
+from communication.queue_service import QueueService, StartQueueService
+from communication.meame_speaker.meame_speaker import MeameSpeaker
+#from communication.meame_listener import MeameListener
+from multiprocessing import Process, Queue
+from crepe_modus import CrepeModus
+import signal
 
 class CREPE():
-    # start all the processe 
+
+    # starts the required communication services and inits crepe
+    # @param modus is a CrepeModus enum
     # @param data_file_path is the file path to an optional .h5 file
-    def __init__(self, data_file_path = None ):
-        print("[CREPE] Starting CREPE processes")
-        self.comm = Process(target=communication_main, args=[data_file_path])
-        self.neuro = Process(target=neuro_main)
+    # @param queue_services is a list of different child classes of QueueService with corresponding kwargs
+    #           On the form [[ChildQueueService, {"queue_in": <a queue>, "queue_out": None}], [.., {...}], ...]
+    def __init__(self, modus=CrepeModus.LIVE, meame_speaker_periods=None, file_path = None, queue_services = None):
+        self.modus = modus
+        self.queue_services = []
         
-        self.comm.start()
-        self.neuro.start()
+        print("\n[CREPE.init] init crepe with args:\n\tmodus_\t",modus,"\n\tfile_path:\t", 
+                file_path,"\n\tqueue_services:\t",queue_services)
         
-        #self.neuro.join()
-        #self.comm.join()
+        init_meame_speaker = False
+        if modus == CrepeModus.LIVE:
+            listener = StartQueueService(MeameListener, server_address = "10.20.92.130", port = 12340, bitrate=10000)
+            self.queue_services.append(listener)
+            init_meame_speaker = True
+        elif modus == CrepeModus.FILE:
+            # initates a h5 reader and start the service
+            hdf5 = StartQueueService(HDF5Reader, file_path=file_path)
+            self.queue_services.append(hdf5)
+
+        elif modus == CrepeModus.TEST:
+            hdf5 = StartQueueService(HDF5Reader, mode=self.modus)
+            self.queue_services.append(hdf5)
+
+        elif modus == CrepeModus.OFFLINE:
+            listener = StartQueueService(MeameListener, server_address = "127.0.0.1", port = 40000, bitrate=10000)
+            self.queue_services.append(listener)
+
+        else:
+            raise ValueError("Wrong crepe modus supplied")
+
+
+        if queue_services is not None:
+            for i, service in enumerate(queue_services):
+                queue_in = self.queue_services[-1].queue_out
+                service[1]["queue_in"] = queue_in
+                qs = StartQueueService(service[0], **service[1])
+                self.queue_services.append(qs)
+            if len(self.queue_services) > 1:
+                print("\n[CREPE.init] started ", len(self.queue_services) - 1 ," extra services")
+
+        # connect meame speaker here
+        if init_meame_speaker:
+            kw = {"queue_in": self.queue_services[-1].queue_out, "periods": meame_speaker_periods}
+            qs = StartQueueService(MeameSpeaker, **kw)
+            self.queue_services.append(qs)
+
+        signal.signal(signal.SIGINT, lambda signal, frame: self._shutdown())
+    
+    def get_first_queue(self):
+        return self.queue_services[0].queue_out
+
+    def get_last_queue(self):
+        return self.queue_services[-1].queue_out
+
+    def wait(self, data_func=None):
+        last_queue = self.get_last_queue()
+        dummy = QueueService(name="END", queue_in=last_queue)
+        while True:
+            data = dummy.get()
+            if data is False:
+                self.shutdown()
+                return
+            if data_func is not None:
+                data_func(data)
+
+    def _shutdown(self):
+        print("\n[CREPE._shutdown] sigint intercepted, shutting down")
+        self.shutdown()
+        sys.exit(0)
 
     # Function that runs the required shutdown commands before the project is closed 
     def shutdown(self):
-        self.comm.terminate()
-        self.neuro.terminate()
-        print("Terminated CREPE processes")
+        # print("[CREPE] queue_services ", [x.get_name() for x in self.queue_services] )
+        for x in self.queue_services:
+           print("[CREPE.shutdown] Terminating ", x.get_name())
+           x.process.terminate()
+        self.queue_service = None
+        print("[CREPE.shutdown] Terminated all CREPE processes")
 
 if __name__ == "__main__":
+    #crep = CREPE(modus=CrepeModus.FILE, file_path="../test_data/4.h5")
     crep = CREPE()
-    crep.start("__TESTING")
+    time.sleep(3)
+    crep.shutdown()
