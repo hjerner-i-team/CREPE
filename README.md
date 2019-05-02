@@ -245,6 +245,18 @@ Gets the current directory of the file
 It first finds this projects folders absolute path. And then inserts the new path into the sys.path. This new path overrides the original path. The new path looks something like `/home/user/projects/CREPE/' 
 
 # Documentation
+## CREPE
+
+CREPE sets up data flow with CREPE services, such as Meame Speaker, Meame Listener, or HDF5Reader depending on the given modus, and user given data-flow items given trough the `queue_services` argument. CREPE also hijacks the SIGINT signal recived from CTRL-C to cleanly termiante the different processes and then exit. 
+
+| Category |  Name | Description  | Params | Returns 
+|---|---|---|---|---|
+| init | __init__ | starts CREPE Data flow with CREPE services and user defined QueueServices | modus=CrepeModus, meame_speaker_periods=refer to meame speaker documention, file_path=absolute path to .h5 file, queue_service=refer to QueueService documentation | |
+| func | shutdown | Function that terminates all the QueueService processes | | |
+| internal func | _shutdown | Function that is triggered on Ctrl+C signal | | |
+| helper func | wait | Gets the last queue in the data-flow and processes the data trough a given method untill poison pill is recived | data_func = A function that gets data and does something to it | |
+| helper func | get_first_queue | gets first queue of the data flow, most likley the Meame Listener output | | Queue |
+| helper func | get_last_queue | gets the last queue of the data flow, most likley the Meame Speaker output | | Queue |
 
 ## QueueService
 QueueService is a class that helps with the communication between data-flow elements. It gets data from a input queue and outputs data unto a different output queue. It is meant to be inherited by any class who wants to be run as a process in the CREPE data-flow pipeline.
@@ -270,3 +282,16 @@ We implement this technique by calling the `end()` function. It sends a `Poision
 | Helper Function | get_x_elems | Get at least x number of columns from queue |  x_elems = is the minimum number of columns to get | a single segment with shape (rows, x_elems or more) |
 | Helper Function | get_x_seg  |  get x numer of segments / items from queue. | x_seg = is the number of times to call .get()  |  a single segment concatinated from x_seg segments/items from queue |
 | Helper Function | get_n_col | Same as get_x_elems but without slow concatenations |  N = number of columns, seg_height = heigth of segment, seg_widt = width of segment | A 2d np array with dimension (seg_width, seg_height) |
+
+## HDF5Reader 
+HDF5Reader either reads from a .h5 file, and replaces MeameListener, or it generates a stream of random test segments.
+
+| Category |  Name | Description  | Params | Returns 
+|---|---|---|---|---|
+| init | __init__ | sets optional file path and mode | queue_out = Queue to output to, file_path = Absolute file path of .h5 file, mode = CrepeModus, **kwargs = any optional named arguments | | 
+| func | generate_H5_stream | Reads .h5 file, divides it into 100 elements per segment and pushes each segment to queue_out | | |
+| func | run | If mode is FILE then genereate h5 stream or if the mode is test then continously genereate new test segments and push them to the output queue | | |
+| internal func | _generate_random_test_segment | Generates a segment consisting of random data | _range = The length of the segment | 2d np array |
+| internal func | _generate_random_test_segment_list | Generates a segment consiting of random data | _range = The length of the segment | 2d python array |
+
+
