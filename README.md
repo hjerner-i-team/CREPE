@@ -2,6 +2,8 @@
 ## Core Reservoir Experiment Python (Example)
 The purpose of this project is to experiment with interaction of real grown neurons as part of the NTNU Cyborg project
 
+Please refer to the project report, or sub-component readme's, for full documention
+
 _This is the work of group 2 - Hjerner i Team - in the EiT village NTNU Cyborg (Course TTK4850)_
 
 ## Description
@@ -30,9 +32,6 @@ If using windows then follow the same instructions in this link: https://docs.py
 ##### Install requirements
 `pip install -r requirements.txt`
 
-# How CREPE works
-TODO
-
 # How to use CREPE
 This section will describe how to use CREPE. For examples take a look at out example experiment repo. 
 ## importing
@@ -58,6 +57,7 @@ The easiest way to set up crep is to just initialize it with a modus
 
 ### CrepeModus
 CrepeModus can be any of the different settings found in `crepe_modus.py` 
+
 | Modus  | Description |
 |---|---|
 | LIVE | Communicate with real MEAME |
@@ -212,11 +212,6 @@ gendata = StartQueueService(GenerateData)
 processdata = StartQueueService(ProcessData, queue_in=gendata.queue_out)
 print("name of gendata: ", gendata.get_name()
 ```
-
-
-
-## How to send / stimulate MEAME
-TODO 
 
 # Development notes 
 If you are developing CREPE (not only using it), read this!
